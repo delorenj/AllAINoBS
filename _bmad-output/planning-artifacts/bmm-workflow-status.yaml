@@ -1,0 +1,43 @@
+generated: "2026-03-07"
+project: "allainobs.com"
+project_type: "web-application"
+selected_track: "method"
+field_type: "greenfield"
+workflow_path: "method-greenfield"
+workflow_status:
+  - phase: 1
+    name: "Analysis (Optional)"
+    workflows:
+      - id: "brainstorm-project"
+        status: "skipped"
+      - id: "research"
+        status: "skipped"
+      - id: "product-brief"
+        status: "planning-artifacts/product-brief-allainobs-2026-03-07.md"
+
+  - phase: 2
+    name: "Planning"
+    workflows:
+      - id: "prd"
+        status: "planning-artifacts/prd-allainobs-2026-03-07.md"
+      - id: "create-ux-design"
+        status: "planning-artifacts/ux-design-specification.md"
+        condition: "if_has_ui"
+
+  - phase: 3
+    name: "Solutioning"
+    workflows:
+      - id: "create-architecture"
+        status: "planning-artifacts/architecture-allainobs-2026-03-07.md"
+      - id: "create-epics-and-stories"
+        status: "planning-artifacts/epics-and-stories-allainobs-2026-03-07.md"
+      - id: "test-design"
+        status: "optional"
+      - id: "implementation-readiness"
+        status: "planning-artifacts/implementation-readiness-report-2026-03-07.md"
+
+  - phase: 4
+    name: "Implementation"
+    workflows:
+      - id: "sprint-planning"
+        status: "implementation-artifacts/sprint-status.yaml"

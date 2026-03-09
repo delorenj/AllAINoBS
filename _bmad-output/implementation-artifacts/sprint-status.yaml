@@ -1,0 +1,104 @@
+# generated: 2026-03-07
+# project: allainobs.com
+# tracking_system: file-system
+# story_location: _bmad-output/implementation-artifacts
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog → in-progress: Automatically when first story is created (via create-story)
+#   - in-progress → done: Manually when all stories reach 'done' status
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review (via Dev's code-review workflow)
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - Epic transitions to 'in-progress' automatically when first story is created
+# - Stories can be worked in parallel if team capacity allows
+# - SM typically creates next story after previous one is 'done' to incorporate learnings
+# - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+
+generated: 2026-03-07
+project: allainobs.com
+tracking_system: file-system
+story_location: _bmad-output/implementation-artifacts
+
+development_status:
+  # Epic 1: Landing Page & Design System (FR-1)
+  epic-1: backlog
+  1-1-implement-design-system: backlog
+  1-2-build-fixed-navigation-with-mobile-hamburger: backlog
+  1-3-build-hero-section-with-animated-gradient-and-ctas: backlog
+  1-4-build-client-marquee-with-infiniteslider-progressiveblur: backlog
+  1-5-build-footer-with-contact-info-and-nav-links: backlog
+  epic-1-retrospective: optional
+
+  # Epic 2: Email Capture & Notifications (FR-6)
+  epic-2: backlog
+  2-1-create-api-subscribe-endpoint: backlog
+  2-2-build-email-signup-form-component-with-validation: backlog
+  2-3-integrate-resend-for-welcome-confirmation-emails: backlog
+  2-4-set-up-cloudflare-kv-subscribers-namespace: backlog
+  epic-2-retrospective: optional
+
+  # Epic 3: Webinar Section (FR-2)
+  epic-3: backlog
+  3-1-build-webinar-info-section-with-schedule-details: backlog
+  3-2-create-webinar-email-signup-connected-to-subscribe-api: backlog
+  3-3-build-webinar-page-with-cloudflare-live-stream-embed: backlog
+  3-4-implement-next-session-countdown-timer: backlog
+  epic-3-retrospective: optional
+
+  # Epic 4: Stripe Payment Integration (FR-7)
+  epic-4: backlog
+  4-1-set-up-stripe-products-prices-for-workshops-and-videos: backlog
+  4-2-create-api-checkout-endpoint-for-stripe-checkout-sessions: backlog
+  4-3-implement-api-webhooks-stripe-with-signature-verification: backlog
+  4-4-create-success-cancel-redirect-pages: backlog
+  4-5-set-up-cloudflare-kv-access-grants-namespace: backlog
+  epic-4-retrospective: optional
+
+  # Epic 5: Workshop Section (FR-3)
+  epic-5: backlog
+  5-1-build-workshop-cards-with-pricing-and-feature-lists: backlog
+  5-2-connect-join-waitlist-enroll-buttons-to-stripe-checkout: backlog
+  5-3-build-custom-team-workshop-inquiry-form: backlog
+  5-4-implement-cohort-seat-counter: backlog
+  epic-5-retrospective: optional
+
+  # Epic 6: 1-on-1 Consulting Section (FR-4)
+  epic-6: backlog
+  6-1-build-consulting-section-with-3-value-pillars: backlog
+  6-2-integrate-calendly-embed-for-session-booking: backlog
+  epic-6-retrospective: optional
+
+  # Epic 7: Video Content Library (FR-5)
+  epic-7: backlog
+  7-1-build-video-content-grid-with-free-premium-badges: backlog
+  7-2-create-watch-id-page-with-cloudflare-stream-player: backlog
+  7-3-implement-api-stream-sign-for-signed-url-generation: backlog
+  7-4-wire-up-premium-video-purchase-flow: backlog
+  epic-7-retrospective: optional
+
+  # Epic 8: Deployment & SEO (NFR-1, NFR-2)
+  epic-8: backlog
+  8-1-configure-cloudflare-next-on-pages-for-cloudflare-pages: backlog
+  8-2-set-up-allainobs-com-dns-on-cloudflare: backlog
+  8-3-implement-meta-tags-open-graph-and-structured-data: backlog
+  8-4-generate-xml-sitemap: backlog
+  8-5-set-up-cloudflare-pages-ci-cd-from-github: backlog
+  epic-8-retrospective: optional
