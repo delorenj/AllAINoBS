@@ -4,21 +4,64 @@ import { db } from '#/db/index'
 import { desc } from 'drizzle-orm'
 import { todos } from '#/db/schema'
 
+type Todo = {
+  id: number
+  title: string
+  createdAt: Date | null
+}
+
+type LoaderData =
+  | {
+      status: 'ready'
+      todos: Todo[]
+    }
+  | {
+      status: 'error'
+      todos: Todo[]
+      error: string
+    }
+
 const getTodos = createServerFn({
   method: 'GET',
-}).handler(async () => {
-  return await db.query.todos.findMany({
-    orderBy: [desc(todos.createdAt)],
-  })
+}).handler(async (): Promise<LoaderData> => {
+  try {
+    const result = await db.query.todos.findMany({
+      orderBy: [desc(todos.createdAt)],
+    })
+
+    return {
+      status: 'ready',
+      todos: result,
+    }
+  } catch (error) {
+    console.error('Failed to load Drizzle todos:', error)
+    return {
+      status: 'error',
+      todos: [],
+      error:
+        error instanceof Error
+          ? error.message
+          : 'Failed to connect to the database.',
+    }
+  }
 })
 
 const createTodo = createServerFn({
   method: 'POST',
 })
   .inputValidator((data: { title: string }) => data)
-  .handler(async ({ data }) => {
-    await db.insert(todos).values({ title: data.title })
-    return { success: true }
+  .handler(async ({ data }): Promise<{ success: boolean; error?: string }> => {
+    try {
+      await db.insert(todos).values({ title: data.title })
+      return { success: true }
+    } catch (error) {
+      console.error('Failed to create Drizzle todo:', error)
+      return {
+        success: false,
+        error:
+          error instanceof Error ? error.message : 'Failed to create todo.',
+      }
+    }
   })
 
 export const Route = createFileRoute('/demo/drizzle')({
@@ -28,7 +71,7 @@ export const Route = createFileRoute('/demo/drizzle')({
 
 function DemoDrizzle() {
   const router = useRouter()
-  const todos = Route.useLoaderData()
+  const data = Route.useLoaderData()
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -38,13 +81,23 @@ function DemoDrizzle() {
     if (!title) return
 
     try {
-      await createTodo({ data: { title } })
+      const result = await createTodo({ data: { title } })
+      if (!result.success) {
+        console.error(result.error ?? 'Failed to create todo.')
+        return
+      }
       router.invalidate()
       ;(e.target as HTMLFormElement).reset()
     } catch (error) {
       console.error('Failed to create todo:', error)
     }
   }
+
+  if (data.status === 'error') {
+    return <DrizzleConnectionError error={data.error} />
+  }
+
+  const { todos } = data
 
   return (
     <div
@@ -122,7 +175,6 @@ function DemoDrizzle() {
             style={{
               background: 'rgba(93, 103, 227, 0.1)',
               borderColor: 'rgba(93, 103, 227, 0.3)',
-              focusRing: 'rgba(93, 103, 227, 0.5)',
             }}
           />
           <button
@@ -180,6 +232,49 @@ function DemoDrizzle() {
               </li>
             </ol>
           </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function DrizzleConnectionError({ error }: { error?: string }) {
+  return (
+    <div
+      className="flex min-h-screen items-center justify-center p-4 text-white"
+      style={{
+        background:
+          'linear-gradient(135deg, #0c1a2b 0%, #1a2332 50%, #16202e 100%)',
+      }}
+    >
+      <div className="w-full max-w-2xl rounded-2xl border border-indigo-400/20 bg-indigo-950/60 p-8 shadow-2xl backdrop-blur-md">
+        <h1 className="mb-4 text-3xl font-bold text-indigo-200">
+          Drizzle Database Demo
+        </h1>
+        <p className="mb-6 text-base text-indigo-100/90">
+          This demo needs a reachable Postgres database. Right now the route is
+          in degraded mode instead of crashing the app.
+        </p>
+        {error ? (
+          <p className="mb-6 rounded-lg border border-amber-400/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+            Error: {error}
+          </p>
+        ) : null}
+        <div className="rounded-xl border border-indigo-400/20 bg-black/20 p-6">
+          <h2 className="mb-3 text-lg font-semibold text-indigo-100">
+            Required setup
+          </h2>
+          <ol className="list-decimal space-y-2 pl-5 text-sm text-indigo-100/80">
+            <li>
+              Configure <code>DATABASE_URL</code> in <code>.env.local</code>.
+            </li>
+            <li>
+              Run <code>pnpm dlx drizzle-kit generate</code>.
+            </li>
+            <li>
+              Run <code>pnpm dlx drizzle-kit migrate</code>.
+            </li>
+          </ol>
         </div>
       </div>
     </div>

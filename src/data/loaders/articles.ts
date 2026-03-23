@@ -87,8 +87,14 @@ export const getArticlesData = createServerFn({
     (input?: { page?: number; category?: string; query?: string }) => input,
   )
   .handler(async ({ data }): Promise<TStrapiResponseCollection<TArticle>> => {
-    const response = await getArticles(data?.page, data?.category, data?.query)
-    return response
+    try {
+      const response = await getArticles(data?.page, data?.category, data?.query)
+      return response
+    } catch (error) {
+      console.error('getArticlesData error:', error)
+      // Return an empty collection instead of throwing
+      return { data: [], meta: { pagination: { page: 1, pageSize: PAGE_SIZE, pageCount: 0, total: 0 } } }
+    }
   })
 
 export const getArticleByIdData = createServerFn({
@@ -97,8 +103,13 @@ export const getArticleByIdData = createServerFn({
   .inputValidator((documentId: string) => documentId)
   .handler(
     async ({ data: documentId }): Promise<TStrapiResponseSingle<TArticle>> => {
-      const response = await getArticleById(documentId)
-      return response
+      try {
+        const response = await getArticleById(documentId)
+        return response
+      } catch (error) {
+        console.error('getArticleByIdData error:', error)
+        throw error
+      }
     },
   )
 
@@ -108,7 +119,12 @@ export const getArticleBySlugData = createServerFn({
   .inputValidator((slug: string) => slug)
   .handler(
     async ({ data: slug }): Promise<TStrapiResponseCollection<TArticle>> => {
-      const response = await getArticleBySlug(slug)
-      return response
+      try {
+        const response = await getArticleBySlug(slug)
+        return response
+      } catch (error) {
+        console.error('getArticleBySlugData error:', error)
+        return { data: [], meta: { pagination: { page: 1, pageSize: PAGE_SIZE, pageCount: 0, total: 0 } } }
+      }
     },
   )

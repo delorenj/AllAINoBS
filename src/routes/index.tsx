@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useRef } from 'react'
 import { motion, useScroll, useTransform } from 'motion/react'
 import { InView } from '../components/ui/in-view'
+import EmailCapture from '../components/EmailCapture'
 
 export const Route = createFileRoute('/')({ component: HomePage })
 
@@ -315,6 +316,9 @@ function HomePage() {
           }
         `}</style>
       </InView>
+
+      {/* ========== EMAIL CAPTURE ========== */}
+      <EmailCapture />
 
       {/* ========== FEATURE SECTIONS (alternating layout) ========== */}
       {SECTIONS.map((section, index) => (

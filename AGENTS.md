@@ -44,9 +44,6 @@ Project Identifier: ALLAI
 
 ## Stack
 
-**Open Question**:
-How do we get the TanStack boostrapped in the first command, merged with the Shadcn-flavored TanStack boostrapped in the second command? That's what I Want.
-
 - TanStack: `npx @tanstack/cli@latest create allainobs --tailwind --add-ons cloudflare,tanstack-query,strapi,clerk,start,store,form,table,neon,drizzle,eslint,apollo-client`
 - Shadcn: TanStack Start preset `pnpm dlx shadcn@latest init --preset b1GKwuLw1 --base base --template start --monorepo`
 

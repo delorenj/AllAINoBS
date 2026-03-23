@@ -1,11 +1,12 @@
-import { gql, TypedDocumentNode } from '@apollo/client'
+import { gql } from '@apollo/client'
 import { useReadQuery } from '@apollo/client/react'
 import { createFileRoute } from '@tanstack/react-router'
-import React from 'react'
+
+import type { TypedDocumentNode } from '@apollo/client'
 
 // Example GraphQL query - replace with your own schema
 const EXAMPLE_QUERY: TypedDocumentNode<{
-  continents: { __typename: string; code: string; name: string }
+  continents: Array<{ __typename?: string; code: string; name: string }>
 }> = gql`
   query ExampleQuery {
     continents {
