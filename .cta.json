@@ -1,0 +1,32 @@
+{
+  "projectName": "allainobs-temp",
+  "mode": "file-router",
+  "typescript": true,
+  "tailwind": true,
+  "packageManager": "pnpm",
+  "git": true,
+  "install": true,
+  "addOnOptions": {
+    "drizzle": {
+      "database": "postgresql"
+    }
+  },
+  "includeExamples": true,
+  "envVarValues": {},
+  "routerOnly": false,
+  "version": 1,
+  "framework": "react",
+  "chosenAddOns": [
+    "cloudflare",
+    "tanstack-query",
+    "strapi",
+    "clerk",
+    "store",
+    "form",
+    "table",
+    "neon",
+    "drizzle",
+    "eslint",
+    "apollo-client"
+  ]
+}
