@@ -13,7 +13,7 @@ date: '2026-03-07'
 
 ## 1. System Context
 
-allainobs.com is a marketing, commerce, and content delivery platform for an AI consulting business. It is a Next.js application deployed on Cloudflare Pages, integrating with Cloudflare Stream/Live for video, Stripe for payments, and external services for email and scheduling.
+allainobs.com is a marketing, commerce, and content delivery platform for an AI consulting business. It is a TanStack Start application deployed on Cloudflare Workers, integrating with Cloudflare Stream/Live for video, Stripe for payments, Clerk for authentication, Neon (Postgres) + Drizzle ORM for persistent data, Strapi CMS for content management, and external services for email and scheduling.
 
 ### System Context Diagram
 
@@ -25,7 +25,7 @@ C4Context
     Person(customer, "Customer", "Pays for workshops/content/consulting")
     Person(admin, "Jarad", "Content creator, workshop facilitator")
 
-    System(allainobs, "allainobs.com", "Next.js on Cloudflare Pages")
+    System(allainobs, "allainobs.com", "TanStack Start on Cloudflare Workers")
 
     System_Ext(stripe, "Stripe", "Payment processing")
     System_Ext(cf_stream, "Cloudflare Stream", "Video hosting & delivery")
@@ -33,6 +33,9 @@ C4Context
     System_Ext(calendly, "Calendly", "Session scheduling")
     System_Ext(resend, "Resend", "Transactional email")
     System_Ext(cf_kv, "Cloudflare KV", "Email list storage")
+    System_Ext(clerk, "Clerk", "Authentication & user management")
+    System_Ext(neon, "Neon", "Serverless Postgres database")
+    System_Ext(strapi, "Strapi CMS", "Content management")
 
     Rel(visitor, allainobs, "Browses, signs up for webinar")
     Rel(customer, allainobs, "Purchases workshops/content")
@@ -42,7 +45,11 @@ C4Context
     Rel(allainobs, cf_live, "Embeds live webinar")
     Rel(allainobs, resend, "Sends email notifications")
     Rel(allainobs, cf_kv, "Stores subscriber emails")
+    Rel(allainobs, clerk, "Authenticates users")
+    Rel(allainobs, neon, "Stores relational data via Drizzle ORM")
+    Rel(allainobs, strapi, "Fetches CMS content via Apollo Client")
     Rel(admin, allainobs, "Manages content")
+    Rel(admin, strapi, "Manages CMS content")
     Rel(admin, cf_live, "Streams webinar")
 ```
 
@@ -52,17 +59,18 @@ C4Context
 
 ### AD-1: Hosting Platform
 
-**Decision:** Cloudflare Pages with `@cloudflare/next-on-pages`
+**Decision:** Cloudflare Workers with `@cloudflare/vite-plugin` (TanStack Start + Vite)
 
-**Context:** Need static + server-side rendering, API routes for webhooks, and tight integration with Cloudflare Stream/Live/KV.
+**Context:** Need SSR with server functions for webhooks and data loading, plus tight integration with Cloudflare Stream/Live/KV. TanStack Start provides a full-stack React framework built on Vite with file-based routing (TanStack Router), server functions, and first-class SSR support.
 
 **Alternatives Considered:**
-- Vercel: Best Next.js DX, but adds a separate billing/vendor layer when we're already deep in Cloudflare for video
+- Vercel + Next.js: Mature SSR platform, but adds a separate billing/vendor layer when we're already deep in Cloudflare for video
+- Cloudflare Pages + Next.js: `@cloudflare/next-on-pages` has compatibility gaps; TanStack Start's Vite-based build integrates more naturally with Cloudflare Workers via `@cloudflare/vite-plugin`
 - Self-hosted: Maximum control but unnecessary ops overhead for a marketing site
 
-**Rationale:** Single vendor for hosting, video, DNS, KV storage, and CDN. Reduces billing complexity and latency between services. Next.js support via `@cloudflare/next-on-pages` is mature enough for this use case.
+**Rationale:** Single vendor for hosting, video, DNS, KV storage, and CDN. TanStack Start's Vite-native architecture pairs cleanly with `@cloudflare/vite-plugin` for Cloudflare Workers deployment. The TanStack ecosystem (Router, Query, Form, Table, Store) provides a cohesive full-stack solution with excellent type safety. pnpm is used as the package manager.
 
-**Fallback:** If Cloudflare Pages Next.js support proves problematic, deploy to Vercel and keep Cloudflare for video/DNS only. This is a low-cost pivot since the code is identical.
+**Fallback:** If Cloudflare Workers deployment proves problematic, TanStack Start supports multiple deployment targets (Node.js, Vercel, Netlify). Migrating to Vercel would require minimal config changes while keeping Cloudflare for video/DNS.
 
 ---
 
@@ -79,14 +87,14 @@ C4Context
 **Access Control for Premium Content:**
 ```
 User clicks "Watch" on premium video
-  -> Client requests signed URL from API route
-  -> API route checks Stripe purchase status (via customer email lookup)
+  -> Client requests signed URL from server function
+  -> Server function checks Stripe purchase status (via customer email lookup)
   -> If paid: generate Cloudflare Stream signed URL (time-limited)
   -> If not paid: redirect to Stripe Checkout
   -> Signed URL returned, player loads video
 ```
 
-**Why not auth/accounts:** For MVP, we avoid user accounts entirely. Stripe customer email is the identity. Signed URLs with short TTLs (4 hours) provide adequate access control without account management overhead.
+**Authentication:** Clerk provides user authentication and account management. Stripe customer identity is linked to Clerk user accounts. Signed URLs with short TTLs (4 hours) provide adequate video access control.
 
 ---
 
@@ -97,8 +105,8 @@ User clicks "Watch" on premium video
 **Context:** Need to accept payments for workshops and premium video content without building custom payment UI.
 
 **Implementation:**
-- **Checkout Sessions:** Created via API routes. Each product (workshop, video) maps to a Stripe Price.
-- **Webhooks:** `checkout.session.completed` webhook fires on success. API route at `/api/webhooks/stripe` handles:
+- **Checkout Sessions:** Created via server functions. Each product (workshop, video) maps to a Stripe Price.
+- **Webhooks:** `checkout.session.completed` webhook fires on success. Server function at the Stripe webhook endpoint handles:
   - Workshop enrollment: Store customer email + workshop ID in KV
   - Video access: Store customer email + video ID in KV
 - **Webhook security:** Verify Stripe signature using `stripe.webhooks.constructEvent()`
@@ -106,11 +114,11 @@ User clicks "Watch" on premium video
 **Flow:**
 ```
 User clicks "Enroll" / "Purchase"
-  -> API route creates Stripe Checkout Session
+  -> Server function creates Stripe Checkout Session
   -> Redirect to Stripe hosted checkout
   -> Payment completes
-  -> Stripe fires webhook to /api/webhooks/stripe
-  -> API route stores access grant in Cloudflare KV
+  -> Stripe fires webhook to server function endpoint
+  -> Server function stores access grant in Neon (via Drizzle) and/or KV
   -> User redirected to success page with access
 ```
 
@@ -118,16 +126,22 @@ User clicks "Enroll" / "Purchase"
 
 ### AD-4: Data Storage
 
-**Decision:** Cloudflare KV for all MVP data
+**Decision:** Neon (serverless Postgres) + Drizzle ORM as primary data store, Cloudflare KV for caching and fast key-value lookups
 
-**Context:** The MVP has minimal data needs: email subscribers, purchase access grants, and workshop enrollment. No relational queries needed.
+**Context:** The platform needs relational data for users, purchases, enrollments, content metadata, and course tracking. Neon provides serverless Postgres with a generous free tier. Drizzle ORM provides type-safe database access with schema-as-code. KV supplements for high-speed lookups and caching.
 
-**KV Namespaces:**
+**Primary Database (Neon + Drizzle):**
+- User profiles and authentication data (linked to Clerk)
+- Purchase records and access grants
+- Workshop enrollment and tracking
+- Content metadata and relationships
+- Schema managed via Drizzle migrations (`drizzle.config.ts`)
+
+**KV Namespaces (supplementary):**
 - `SUBSCRIBERS`: Key = email, Value = `{ subscribed_at, source, webinar_notify: bool }`
-- `ACCESS_GRANTS`: Key = `{email}:{content_type}:{content_id}`, Value = `{ granted_at, stripe_session_id }`
-- `WORKSHOPS`: Key = workshop_id, Value = `{ title, seats_remaining, enrollees: [emails] }`
+- Session caching and fast access-grant lookups
 
-**Why not D1/Postgres:** Overkill for MVP. KV is free-tier friendly, requires zero setup, and maps naturally to the access-check pattern (lookup by key). Migrate to D1 when we need relational queries (blog, user accounts, course tracking).
+**Why Neon + Drizzle:** Neon provides true serverless Postgres with branching, auto-scaling, and a generous free tier. Drizzle ORM offers excellent TypeScript integration with schema-as-code and type-safe queries. This combination supports the relational queries needed for user accounts (Clerk), course tracking, and content management (Strapi) while KV handles high-throughput caching needs.
 
 ---
 
@@ -138,8 +152,8 @@ User clicks "Enroll" / "Purchase"
 **Context:** Need email capture (webinar notifications, newsletter) and transactional sends (purchase confirmations, webinar reminders).
 
 **Implementation:**
-- Email signup form posts to `/api/subscribe` API route
-- API route stores email in KV `SUBSCRIBERS` namespace
+- Email signup form calls a server function for subscription
+- Server function stores email in KV `SUBSCRIBERS` namespace
 - Resend API sends transactional emails (welcome, webinar reminder, purchase confirmation)
 - Webinar reminders triggered via Cloudflare Cron Triggers (scheduled worker)
 
@@ -149,46 +163,77 @@ User clicks "Enroll" / "Purchase"
 
 ### AD-6: Frontend Architecture
 
-**Decision:** Next.js App Router + Tailwind CSS v4 + shadcn/ui
+**Decision:** TanStack Start + TanStack Router (file-based routing) + Tailwind CSS v4 + shadcn/ui
 
-**Context:** Already scaffolded. Dark theme with emerald accents. Component-based architecture.
+**Context:** Already scaffolded with TanStack CLI. Dark theme with emerald accents. Component-based architecture. Additional TanStack ecosystem libraries: Query (data fetching), Form (form management), Table (data tables), Store (state management). Apollo Client for Strapi CMS GraphQL integration.
 
 **Component Structure:**
 ```
 src/
-  app/
-    page.tsx              # Landing page (composes sections)
-    api/
-      subscribe/route.ts  # Email capture endpoint
-      checkout/route.ts   # Stripe checkout session creation
-      webhooks/
-        stripe/route.ts   # Stripe webhook handler
-      stream/
-        sign/route.ts     # Cloudflare Stream signed URL generation
-    success/page.tsx      # Post-purchase success page
-    watch/[id]/page.tsx   # Video player page (with access check)
-    webinar/page.tsx      # Live webinar page (Cloudflare Live embed)
+  routes/
+    __root.tsx            # Root layout (wraps all routes)
+    index.tsx             # Landing page (composes sections)
+    about.tsx             # About page
+    demo/
+      clerk.tsx           # Clerk auth demo
+      drizzle.tsx         # Drizzle ORM demo
+      neon.tsx            # Neon database demo
+      strapi.tsx          # Strapi CMS content listing
+      strapi.$articleId.tsx # Strapi article detail
+      form.simple.tsx     # TanStack Form demo
+      form.address.tsx    # TanStack Form address demo
+      store.tsx           # TanStack Store demo
+      table.tsx           # TanStack Table demo
+      tanstack-query.tsx  # TanStack Query demo
   components/
-    nav.tsx               # Fixed navigation
-    hero.tsx              # Hero section
-    client-marquee.tsx    # Scrolling client logos
-    webinar-section.tsx   # Webinar info + signup
-    workshops-section.tsx # Workshop cards + enrollment
-    consulting-section.tsx # 1-on-1 info + Calendly
-    content-section.tsx   # Video content grid
-    footer.tsx            # Footer + contact
-    video-player.tsx      # Cloudflare Stream player wrapper
+    Header.tsx            # Header with navigation
+    Footer.tsx            # Footer + contact
+    ThemeToggle.tsx       # Dark/light theme toggle
+    blocks/               # Content block renderers (rich-text, media, etc.)
+    ui/                   # shadcn/ui components (button, etc.)
+    markdown-content.tsx  # Markdown renderer
+    search.tsx            # Search component
+    pagination.tsx        # Pagination component
+    strapi-image.tsx      # Strapi image wrapper
+  integrations/
+    clerk/
+      header-user.tsx     # Clerk user component for header
+      provider.tsx        # Clerk auth provider
+    tanstack-query/
+      root-provider.tsx   # TanStack Query provider
+      devtools.tsx        # TanStack Query devtools
+  data/
+    loaders/
+      articles.ts         # Strapi article data loaders
+      index.ts            # Loader barrel exports
+    strapi-sdk.ts         # Strapi SDK client
+  db/
+    index.ts              # Drizzle database client (Neon)
+    schema.ts             # Drizzle schema definitions
   lib/
-    stripe.ts             # Stripe client initialization
-    cloudflare.ts         # Cloudflare Stream/KV helpers
-    email.ts              # Resend email helpers
+    strapi-utils.ts       # Strapi helper utilities
+    demo-store.ts         # TanStack Store demo
+    demo-store-devtools.tsx # Store devtools
+  types/
+    strapi.ts             # Strapi type definitions
+  router.tsx              # TanStack Router configuration
+  routeTree.gen.ts        # Auto-generated route tree
+  styles.css              # Global styles
+  start.ts                # TanStack Start entry point
 ```
 
 **Rendering Strategy:**
-- Landing page: Static (ISR with long revalidation)
-- API routes: Edge runtime (Cloudflare Workers)
-- Watch pages: Server-rendered (access check at request time)
+- All pages: SSR via TanStack Start loaders (server functions execute on Cloudflare Workers)
+- Route loaders: Data fetching runs server-side before render via TanStack Router loaders
+- Server functions: Replace traditional API routes; handle webhooks, mutations, and authenticated data access
+- Client interactivity: TanStack Query for client-side cache/refetch, TanStack Store for local state
 - Webinar page: Client-side (live embed, no SSR needed)
+
+**Build & Dev:**
+- Build tool: Vite with `@cloudflare/vite-plugin` (configured in `vite.config.ts`)
+- Dev server: `vite dev` (Cloudflare Workers local runtime via vite plugin)
+- Deployment config: `wrangler.jsonc`
+- Package manager: pnpm
 
 ---
 
@@ -215,7 +260,7 @@ async function getSignedStreamUrl(videoId: string, email: string): Promise<strin
 ### 3.2 Stripe Webhook Handler
 
 ```typescript
-// /api/webhooks/stripe/route.ts
+// Server function for Stripe webhook handling
 export async function POST(request: Request) {
   const body = await request.text();
   const sig = request.headers.get('stripe-signature');
@@ -248,9 +293,8 @@ export async function POST(request: Request) {
 ```mermaid
 graph LR
     subgraph "Cloudflare"
-        Pages["Cloudflare Pages<br/>(Next.js SSR + Static)"]
-        Workers["Edge Workers<br/>(API Routes)"]
-        KV["KV Storage<br/>(Subscribers, Access)"]
+        Workers["Cloudflare Workers<br/>(TanStack Start SSR + Server Functions)"]
+        KV["KV Storage<br/>(Caching, Subscribers)"]
         Stream["Cloudflare Stream<br/>(VOD)"]
         Live["Cloudflare Live<br/>(Webinar)"]
         DNS["Cloudflare DNS<br/>(allainobs.com)"]
@@ -260,24 +304,29 @@ graph LR
         Stripe["Stripe<br/>(Payments)"]
         Resend["Resend<br/>(Email)"]
         Calendly["Calendly<br/>(Booking)"]
+        Clerk["Clerk<br/>(Auth)"]
+        Neon["Neon<br/>(Postgres via Drizzle)"]
+        Strapi["Strapi CMS<br/>(Content via Apollo)"]
     end
 
-    DNS --> Pages
-    Pages --> Workers
+    DNS --> Workers
     Workers --> KV
     Workers --> Stream
     Workers --> Stripe
     Workers --> Resend
-    Pages --> Live
-    Pages --> Calendly
+    Workers --> Clerk
+    Workers --> Neon
+    Workers --> Strapi
+    Workers --> Live
+    Workers --> Calendly
 ```
 
 ### CI/CD
 
 - **Source:** GitHub repository
-- **Build:** Cloudflare Pages auto-deploys from `main` branch
-- **Preview:** PR-based preview deployments on Cloudflare Pages
-- **Environment variables:** Stored in Cloudflare Pages dashboard (Stripe keys, Resend API key, Stream API token)
+- **Build:** Vite builds TanStack Start app; deployed to Cloudflare Workers via `wrangler` (configured in `wrangler.jsonc`)
+- **Preview:** PR-based preview deployments via Cloudflare Workers
+- **Environment variables:** Stored in Cloudflare dashboard and `.env` locally (Stripe keys, Resend API key, Stream API token, Clerk keys, Neon connection string, Strapi URL/token)
 
 ---
 
@@ -290,7 +339,8 @@ graph LR
 | Email injection | Server-side validation, rate limiting on subscribe endpoint |
 | XSS | React's built-in escaping, CSP headers |
 | CSRF | SameSite cookies, Stripe Checkout is hosted (no custom form) |
-| API key exposure | All secrets in Cloudflare Pages env vars, never client-side |
+| API key exposure | All secrets in Cloudflare Workers env vars and `.env`, never client-side |
+| Auth bypass | Clerk handles session management, token verification, and protected routes |
 
 ---
 
@@ -300,12 +350,12 @@ The MVP architecture is intentionally simple. Here's the migration path as the b
 
 | Trigger | Migration |
 |---------|-----------|
-| Need user accounts | Add Cloudflare Access or Clerk for auth |
-| Need relational data | Migrate KV to Cloudflare D1 (SQLite) |
-| Need blog/CMS | Add MDX-based blog or Sanity CMS |
-| Need course tracking | Add D1 tables for progress/completion |
+| Need advanced user roles | Extend Clerk with custom roles/permissions (Clerk already integrated) |
+| Need complex content workflows | Extend Strapi CMS with custom content types and workflows (Strapi already integrated) |
+| Need course tracking | Add Drizzle schema tables for progress/completion (Neon + Drizzle already integrated) |
 | High video volume | Cloudflare Stream scales automatically |
 | Email list > 10K | Migrate to ConvertKit or similar ESP |
+| Need real-time features | Add Cloudflare Durable Objects or WebSocket support via Workers |
 
 ---
 
@@ -313,11 +363,13 @@ The MVP architecture is intentionally simple. Here's the migration path as the b
 
 | Order | Component | Rationale |
 |-------|-----------|-----------|
-| 1 | Landing page polish | Already scaffolded, finish design |
-| 2 | Email capture API | Highest-value MVP feature (lead gen) |
-| 3 | Stripe integration | Revenue enablement |
-| 4 | Cloudflare Stream video player | Content delivery |
-| 5 | Cloudflare Live embed | Webinar infrastructure |
-| 6 | Calendly integration | 1-on-1 booking |
-| 7 | SEO optimization | Organic traffic growth |
-| 8 | Cloudflare Pages deployment | Go live on allainobs.com |
+| 1 | Landing page polish | Already scaffolded with TanStack Start + shadcn/ui, finish design |
+| 2 | Clerk auth integration | User accounts and access control (already scaffolded) |
+| 3 | Email capture server function | Highest-value MVP feature (lead gen) |
+| 4 | Stripe integration | Revenue enablement |
+| 5 | Strapi CMS content pages | Content management for articles and learning materials |
+| 6 | Cloudflare Stream video player | Content delivery |
+| 7 | Cloudflare Live embed | Webinar infrastructure |
+| 8 | Calendly integration | 1-on-1 booking |
+| 9 | SEO optimization | Organic traffic growth |
+| 10 | Cloudflare Workers deployment | Go live on allainobs.com |
