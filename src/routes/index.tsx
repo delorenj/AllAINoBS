@@ -154,8 +154,8 @@ const SECTIONS = [
     kicker: 'Expert 1-on-1 Access',
     title: 'Consulting That Ships Results',
     description:
-      'Architecture reviews, workflow audits, pair programming sessions. Direct access to a Staff Engineer who has shipped production AI systems at companies from startups to Fortune 500.',
-    cta: { label: 'Book a Session', href: '#consulting' },
+      'Architecture reviews, workflow audits, pair programming sessions. Direct access to a Staff Engineer who has shipped production AI systems at companies from startups to Fortune 500. Engagements that outgrow one person scale into AutomaticAI.',
+    cta: { label: 'Book a Session', href: '/book' },
     Illustration: ConsultingIllustration,
   },
   {

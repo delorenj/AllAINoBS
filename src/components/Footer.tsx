@@ -27,7 +27,7 @@ export default function Footer() {
               <nav className="flex flex-col gap-2 text-sm">
                 <a href="#webinars" className="text-[var(--brand-ink-soft)] no-underline transition hover:text-[var(--brand-ink)]">Webinars</a>
                 <a href="#workshops" className="text-[var(--brand-ink-soft)] no-underline transition hover:text-[var(--brand-ink)]">Workshops</a>
-                <a href="#consulting" className="text-[var(--brand-ink-soft)] no-underline transition hover:text-[var(--brand-ink)]">Consulting</a>
+                <a href="/book" className="text-[var(--brand-ink-soft)] no-underline transition hover:text-[var(--brand-ink)]">Book time</a>
                 <a href="#content" className="text-[var(--brand-ink-soft)] no-underline transition hover:text-[var(--brand-ink)]">Content</a>
               </nav>
             </div>
@@ -49,9 +49,10 @@ export default function Footer() {
         {/* Bottom row */}
         <div className="flex flex-col items-center justify-between gap-3 text-center sm:flex-row sm:text-left">
           <p className="m-0 text-sm text-[var(--brand-ink-soft)]">
-            &copy; {year} ACD Consulting. All rights reserved.
+            &copy; {year} ACD Consulting · Team engagements scale through{' '}
+            <span className="text-[var(--brand-ink)]">AutomaticAI</span>.
           </p>
-          <p className="section-kicker m-0">Built with TanStack Start</p>
+          <p className="section-kicker m-0">All AI · No BS</p>
         </div>
       </div>
     </footer>

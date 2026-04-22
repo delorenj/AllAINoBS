@@ -3,12 +3,16 @@ import { useState } from 'react'
 import ClerkHeader from '../integrations/clerk/header-user'
 import ThemeToggle from './ThemeToggle'
 
-const SECTIONS = [
-  { label: 'Webinars', href: '#webinars' },
-  { label: 'Workshops', href: '#workshops' },
-  { label: 'Consulting', href: '#consulting' },
-  { label: 'Content', href: '#content' },
-] as const
+type NavItem =
+  | { label: string; href: string; kind: 'hash' }
+  | { label: string; to: '/book'; kind: 'route' }
+
+const SECTIONS: ReadonlyArray<NavItem> = [
+  { label: 'Webinars', href: '#webinars', kind: 'hash' },
+  { label: 'Workshops', href: '#workshops', kind: 'hash' },
+  { label: 'Book', to: '/book', kind: 'route' },
+  { label: 'Content', href: '#content', kind: 'hash' },
+]
 
 export default function Header() {
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -29,11 +33,17 @@ export default function Header() {
 
         {/* Desktop nav links */}
         <div className="hidden items-center gap-6 text-sm font-semibold md:flex">
-          {SECTIONS.map((s) => (
-            <a key={s.href} href={s.href} className="nav-link">
-              {s.label}
-            </a>
-          ))}
+          {SECTIONS.map((s) =>
+            s.kind === 'route' ? (
+              <Link key={s.to} to={s.to} className="nav-link">
+                {s.label}
+              </Link>
+            ) : (
+              <a key={s.href} href={s.href} className="nav-link">
+                {s.label}
+              </a>
+            ),
+          )}
         </div>
 
         {/* Right side: CTA + auth + theme + mobile toggle */}
@@ -71,16 +81,27 @@ export default function Header() {
       {mobileOpen && (
         <div className="border-t border-[var(--brand-line)] pb-4 pt-3 md:hidden">
           <div className="page-wrap flex flex-col gap-3">
-            {SECTIONS.map((s) => (
-              <a
-                key={s.href}
-                href={s.href}
-                onClick={() => setMobileOpen(false)}
-                className="rounded-lg px-3 py-2.5 text-sm font-semibold text-[var(--brand-ink-soft)] no-underline transition hover:bg-[var(--link-bg-hover)] hover:text-[var(--brand-ink)]"
-              >
-                {s.label}
-              </a>
-            ))}
+            {SECTIONS.map((s) =>
+              s.kind === 'route' ? (
+                <Link
+                  key={s.to}
+                  to={s.to}
+                  onClick={() => setMobileOpen(false)}
+                  className="rounded-lg px-3 py-2.5 text-sm font-semibold text-[var(--brand-ink-soft)] no-underline transition hover:bg-[var(--link-bg-hover)] hover:text-[var(--brand-ink)]"
+                >
+                  {s.label}
+                </Link>
+              ) : (
+                <a
+                  key={s.href}
+                  href={s.href}
+                  onClick={() => setMobileOpen(false)}
+                  className="rounded-lg px-3 py-2.5 text-sm font-semibold text-[var(--brand-ink-soft)] no-underline transition hover:bg-[var(--link-bg-hover)] hover:text-[var(--brand-ink)]"
+                >
+                  {s.label}
+                </a>
+              ),
+            )}
             <a
               href="#webinars"
               onClick={() => setMobileOpen(false)}

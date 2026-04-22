@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as BookRouteImport } from './routes/book'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DemoTanstackQueryRouteImport } from './routes/demo/tanstack-query'
@@ -23,6 +24,11 @@ import { Route as DemoStrapiArticleIdRouteImport } from './routes/demo/strapi.$a
 import { Route as DemoFormSimpleRouteImport } from './routes/demo/form.simple'
 import { Route as DemoFormAddressRouteImport } from './routes/demo/form.address'
 
+const BookRoute = BookRouteImport.update({
+  id: '/book',
+  path: '/book',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AboutRoute = AboutRouteImport.update({
   id: '/about',
   path: '/about',
@@ -92,6 +98,7 @@ const DemoFormAddressRoute = DemoFormAddressRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/book': typeof BookRoute
   '/demo/apollo-client': typeof DemoApolloClientRoute
   '/demo/clerk': typeof DemoClerkRoute
   '/demo/drizzle': typeof DemoDrizzleRoute
@@ -107,6 +114,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/book': typeof BookRoute
   '/demo/apollo-client': typeof DemoApolloClientRoute
   '/demo/clerk': typeof DemoClerkRoute
   '/demo/drizzle': typeof DemoDrizzleRoute
@@ -123,6 +131,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/book': typeof BookRoute
   '/demo/apollo-client': typeof DemoApolloClientRoute
   '/demo/clerk': typeof DemoClerkRoute
   '/demo/drizzle': typeof DemoDrizzleRoute
@@ -140,6 +149,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/about'
+    | '/book'
     | '/demo/apollo-client'
     | '/demo/clerk'
     | '/demo/drizzle'
@@ -155,6 +165,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/about'
+    | '/book'
     | '/demo/apollo-client'
     | '/demo/clerk'
     | '/demo/drizzle'
@@ -170,6 +181,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/about'
+    | '/book'
     | '/demo/apollo-client'
     | '/demo/clerk'
     | '/demo/drizzle'
@@ -186,6 +198,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
+  BookRoute: typeof BookRoute
   DemoApolloClientRoute: typeof DemoApolloClientRoute
   DemoClerkRoute: typeof DemoClerkRoute
   DemoDrizzleRoute: typeof DemoDrizzleRoute
@@ -200,6 +213,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/book': {
+      id: '/book'
+      path: '/book'
+      fullPath: '/book'
+      preLoaderRoute: typeof BookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/about': {
       id: '/about'
       path: '/about'
@@ -309,6 +329,7 @@ const DemoStrapiRouteWithChildren = DemoStrapiRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
+  BookRoute: BookRoute,
   DemoApolloClientRoute: DemoApolloClientRoute,
   DemoClerkRoute: DemoClerkRoute,
   DemoDrizzleRoute: DemoDrizzleRoute,

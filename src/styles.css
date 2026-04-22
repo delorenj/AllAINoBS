@@ -29,7 +29,9 @@
   --brand-surface: rgba(10, 15, 13, 0.85);
   --brand-surface-strong: rgba(8, 12, 10, 0.95);
   --brand-line: rgba(52, 211, 153, 0.12);
+  --brand-line-strong: rgba(52, 211, 153, 0.3);
   --brand-inset-glint: rgba(52, 211, 153, 0.08);
+  --ease-brand: cubic-bezier(0.16, 1, 0.3, 1);
   --brand-kicker: rgba(52, 211, 153, 0.9);
   --brand-bg: #050a08;
   --brand-bg-elevated: #0a1210;
@@ -86,6 +88,7 @@
   --brand-surface: rgba(255, 255, 255, 0.82);
   --brand-surface-strong: rgba(255, 255, 255, 0.95);
   --brand-line: rgba(6, 78, 59, 0.12);
+  --brand-line-strong: rgba(5, 150, 105, 0.35);
   --brand-inset-glint: rgba(255, 255, 255, 0.8);
   --brand-kicker: rgba(5, 150, 105, 0.9);
   --brand-bg: #f0fdf4;
@@ -128,6 +131,7 @@
     --brand-surface: rgba(255, 255, 255, 0.82);
     --brand-surface-strong: rgba(255, 255, 255, 0.95);
     --brand-line: rgba(6, 78, 59, 0.12);
+    --brand-line-strong: rgba(5, 150, 105, 0.35);
     --brand-inset-glint: rgba(255, 255, 255, 0.8);
     --brand-kicker: rgba(5, 150, 105, 0.9);
     --brand-bg: #f0fdf4;
@@ -438,6 +442,32 @@ a {
 
 .glow-pulse {
   animation: glow-pulse 3s ease-in-out infinite;
+}
+
+/* Pulse dot (used on founder online indicator) */
+@keyframes pulse-dot {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(52, 211, 153, 0);
+  }
+}
+
+/* Booking page marquee track */
+@keyframes booking-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.booking-marquee {
+  animation: booking-marquee 36s linear infinite;
+  width: max-content;
+}
+.booking-marquee:hover {
+  animation-play-state: paused;
+}
+@media (prefers-reduced-motion: reduce) {
+  .booking-marquee { animation: none; }
 }
 
 /* ============================================================
