@@ -1,20 +1,43 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
+import { subscribe } from '../server/subscribe'
 
-export default function EmailCapture() {
+interface EmailCaptureProps {
+  source?: string
+  webinar_notify?: boolean
+}
+
+export default function EmailCapture({
+  source = 'newsletter',
+  webinar_notify = false,
+}: EmailCaptureProps) {
   const [email, setEmail] = useState('')
   const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle')
+  const [errorMsg, setErrorMsg] = useState('')
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!email.trim()) return
 
     setStatus('submitting')
+    setErrorMsg('')
 
-    // TODO: Wire to /api/subscribe endpoint (Epic 2, Story 2.1)
-    await new Promise((r) => setTimeout(r, 800))
-    setStatus('success')
-    setEmail('')
+    try {
+      const result = await subscribe({
+        data: { email, source, webinar_notify },
+      })
+
+      if (result.success) {
+        setStatus('success')
+        setEmail('')
+      } else {
+        setStatus('error')
+        setErrorMsg(result.error)
+      }
+    } catch {
+      setStatus('error')
+      setErrorMsg('Network error. Please try again.')
+    }
   }
 
   return (
@@ -94,34 +117,48 @@ export default function EmailCapture() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: 0.5, duration: 0.4 }}
-                  className="flex flex-col gap-3 sm:flex-row"
+                  className="flex flex-col gap-3"
                 >
-                  <input
-                    type="email"
-                    required
-                    placeholder="you@company.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    disabled={status === 'submitting'}
-                    className="flex-1 rounded-xl border border-[var(--brand-line)] bg-[rgba(255,255,255,0.03)] px-4 py-3 text-sm text-[var(--brand-ink)] placeholder:text-[var(--brand-ink-soft)] focus:border-[var(--brand-emerald)] focus:outline-none focus:ring-1 focus:ring-[var(--brand-emerald)] disabled:opacity-60"
-                  />
-                  <button
-                    type="submit"
-                    disabled={status === 'submitting'}
-                    className="flex-shrink-0 rounded-xl bg-[var(--brand-emerald)] px-6 py-3 text-sm font-bold text-[#050a08] transition hover:-translate-y-0.5 hover:bg-[var(--brand-emerald-deep)] disabled:pointer-events-none disabled:opacity-60"
-                  >
-                    {status === 'submitting' ? (
-                      <span className="flex items-center gap-2">
-                        <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                          <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" opacity="0.3" />
-                          <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
-                        </svg>
-                        Joining...
-                      </span>
-                    ) : (
-                      'Subscribe'
-                    )}
-                  </button>
+                  <div className="flex flex-col gap-3 sm:flex-row">
+                    <input
+                      type="email"
+                      required
+                      placeholder="you@company.com"
+                      value={email}
+                      onChange={(e) => {
+                        setEmail(e.target.value)
+                        if (status === 'error') setStatus('idle')
+                      }}
+                      disabled={status === 'submitting'}
+                      className="flex-1 rounded-xl border border-[var(--brand-line)] bg-[rgba(255,255,255,0.03)] px-4 py-3 text-sm text-[var(--brand-ink)] placeholder:text-[var(--brand-ink-soft)] focus:border-[var(--brand-emerald)] focus:outline-none focus:ring-1 focus:ring-[var(--brand-emerald)] disabled:opacity-60"
+                    />
+                    <button
+                      type="submit"
+                      disabled={status === 'submitting'}
+                      className="flex-shrink-0 rounded-xl bg-[var(--brand-emerald)] px-6 py-3 text-sm font-bold text-[#050a08] transition hover:-translate-y-0.5 hover:bg-[var(--brand-emerald-deep)] disabled:pointer-events-none disabled:opacity-60"
+                    >
+                      {status === 'submitting' ? (
+                        <span className="flex items-center gap-2">
+                          <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" opacity="0.3" />
+                            <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+                          </svg>
+                          Joining...
+                        </span>
+                      ) : (
+                        'Subscribe'
+                      )}
+                    </button>
+                  </div>
+                  {status === 'error' && errorMsg && (
+                    <motion.p
+                      initial={{ opacity: 0, y: -5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="text-sm text-red-400"
+                    >
+                      {errorMsg}
+                    </motion.p>
+                  )}
                 </motion.form>
               )}
             </AnimatePresence>
