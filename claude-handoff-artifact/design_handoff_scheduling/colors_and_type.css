@@ -1,0 +1,324 @@
+/* ============================================================
+   ALLAINOBS — COLORS & TYPOGRAPHY
+   Dark-first. Emerald accents. "All AI, No BS."
+   ============================================================ */
+
+/* Manrope — self-hosted brand files (replaces Google Fonts substitute) */
+@font-face {
+  font-family: "Manrope";
+  src: url("fonts/manrope.light.otf") format("opentype");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Manrope";
+  src: url("fonts/manrope.medium.otf") format("opentype");
+  font-weight: 400 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Manrope";
+  src: url("fonts/manrope.semibold.otf") format("opentype");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Manrope";
+  src: url("fonts/manrope.bold.otf") format("opentype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Manrope";
+  src: url("fonts/manrope.extrabold.otf") format("opentype");
+  font-weight: 800 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Fraunces + JetBrains Mono still from Google Fonts (no brand files provided) */
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700;9..144,800&family=JetBrains+Mono:wght@400;500;600&display=swap");
+
+/* ---------- Font families ---------- */
+:root {
+  --font-display: "Fraunces", Georgia, serif;
+  --font-sans: "Manrope", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+/* ---------- BRAND TOKENS (dark-first) ---------- */
+:root {
+  /* Core brand palette */
+  --brand-ink:           #e8f0ec;   /* fg1 — primary text */
+  --brand-ink-soft:      #9cb3a8;   /* fg2 — secondary text */
+  --brand-emerald:       #34d399;   /* primary accent */
+  --brand-emerald-deep:  #10b981;   /* primary hover */
+  --brand-emerald-dim:   #059669;   /* primary active */
+  --brand-forest:        #064e3b;   /* deep brand */
+  --brand-bg:            #050a08;   /* page bg */
+  --brand-bg-elevated:   #0a1210;   /* card bg */
+
+  /* Surfaces (translucent — use over gradient bg) */
+  --brand-surface:        rgba(10, 15, 13, 0.85);
+  --brand-surface-strong: rgba(8, 12, 10, 0.95);
+
+  /* Lines & glints */
+  --brand-line:        rgba(52, 211, 153, 0.12);
+  --brand-line-strong: rgba(52, 211, 153, 0.30);
+  --brand-inset-glint: rgba(52, 211, 153, 0.08);
+  --brand-kicker:      rgba(52, 211, 153, 0.90);
+
+  /* Chrome */
+  --header-bg:      rgba(5, 10, 8, 0.88);
+  --chip-bg:        rgba(10, 18, 14, 0.9);
+  --chip-line:      rgba(52, 211, 153, 0.2);
+  --link-bg-hover:  rgba(16, 185, 129, 0.08);
+
+  /* Hero ambient orbs */
+  --hero-a: rgba(52, 211, 153, 0.15);
+  --hero-b: rgba(16, 185, 129, 0.08);
+
+  /* Semantic (status) */
+  --success: #34d399;
+  --warning: #eab308;
+  --danger:  #ef4444;
+  --info:    #38bdf8;
+
+  /* Radii */
+  --radius-xs: 6px;
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-pill: 999px;
+
+  /* Spacing scale (4px base) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+  --space-24: 96px;
+
+  /* Elevation (stacked for glass) */
+  --shadow-card:
+    0 1px 0 var(--brand-inset-glint) inset,
+    0 18px 34px rgba(0,0,0,0.20),
+    0 4px 14px rgba(0,0,0,0.10);
+  --shadow-glass:
+    0 1px 0 var(--brand-inset-glint) inset,
+    0 22px 44px rgba(0,0,0,0.25),
+    0 6px 18px rgba(0,0,0,0.15);
+  --shadow-glow-sm: 0 0 20px rgba(52,211,153,0.15), 0 0 60px rgba(52,211,153,0.05);
+  --shadow-glow-md: 0 0 30px rgba(52,211,153,0.25), 0 0 80px rgba(52,211,153,0.10);
+
+  /* Motion */
+  --ease-brand: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-fast: 120ms;
+  --dur-base: 180ms;
+  --dur-slow: 700ms;
+}
+
+/* ---------- LIGHT MODE (opt-in) ---------- */
+:root[data-theme="light"] {
+  --brand-ink:           #0a1f15;
+  --brand-ink-soft:      #3d5c4a;
+  --brand-emerald:       #059669;
+  --brand-emerald-deep:  #047857;
+  --brand-emerald-dim:   #065f46;
+  --brand-forest:        #d1fae5;
+  --brand-bg:            #f0fdf4;
+  --brand-bg-elevated:   #ffffff;
+  --brand-surface:        rgba(255, 255, 255, 0.82);
+  --brand-surface-strong: rgba(255, 255, 255, 0.95);
+  --brand-line:        rgba(6, 78, 59, 0.12);
+  --brand-line-strong: rgba(6, 78, 59, 0.30);
+  --brand-inset-glint: rgba(255, 255, 255, 0.80);
+  --brand-kicker:      rgba(5, 150, 105, 0.90);
+  --header-bg:      rgba(240, 253, 244, 0.90);
+  --chip-bg:        rgba(255, 255, 255, 0.85);
+  --chip-line:      rgba(5, 150, 105, 0.18);
+  --link-bg-hover:  rgba(5, 150, 105, 0.06);
+  --hero-a: rgba(52, 211, 153, 0.20);
+  --hero-b: rgba(16, 185, 129, 0.12);
+}
+
+/* ============================================================
+   SEMANTIC TYPOGRAPHY
+   ============================================================ */
+
+body {
+  font-family: var(--font-sans);
+  color: var(--brand-ink);
+  background: var(--brand-bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Display — Fraunces serif. Used for hero, section-headers, "All AI, No BS" */
+.display-title,
+.text-display {
+  font-family: var(--font-display);
+  font-size: clamp(2.5rem, 5vw, 4rem);
+  line-height: 1.05;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.text-h1 {
+  font-family: var(--font-sans);
+  font-size: clamp(2rem, 4vw, 3rem);
+  line-height: 1.10;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+}
+
+.text-h2 {
+  font-family: var(--font-sans);
+  font-size: clamp(1.5rem, 3vw, 2.25rem);
+  line-height: 1.15;
+  font-weight: 700;
+  letter-spacing: -0.010em;
+}
+
+.text-h3 {
+  font-family: var(--font-sans);
+  font-size: clamp(1.25rem, 2.5vw, 1.5rem);
+  line-height: 1.25;
+  font-weight: 600;
+}
+
+.text-h4 {
+  font-family: var(--font-sans);
+  font-size: 1.125rem;
+  line-height: 1.35;
+  font-weight: 600;
+}
+
+.text-body   { font-size: 1rem;     line-height: 1.6; }
+.text-small  { font-size: 0.875rem; line-height: 1.5; }
+.text-caption{ font-size: 0.75rem;  line-height: 1.4; letter-spacing: 0.01em; }
+
+.text-mono {
+  font-family: var(--font-mono);
+  font-feature-settings: "ss01", "cv11";
+}
+
+/* The "kicker" — tiny uppercase emerald tag above titles. SIGNATURE element. */
+.section-kicker {
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-weight: 700;
+  font-size: 0.69rem;
+  color: var(--brand-kicker);
+  font-family: var(--font-sans);
+}
+
+/* ============================================================
+   COMPONENT TOKENS (atomic primitives used by the UI kit)
+   ============================================================ */
+
+.glass-card {
+  border: 1px solid var(--brand-line);
+  background: linear-gradient(165deg, var(--brand-surface-strong), var(--brand-surface));
+  box-shadow: var(--shadow-glass);
+  backdrop-filter: blur(12px);
+  border-radius: var(--radius-xl);
+}
+
+.feature-card {
+  border: 1px solid var(--brand-line);
+  background: linear-gradient(165deg, var(--brand-surface-strong), var(--brand-surface));
+  box-shadow: var(--shadow-card);
+  border-radius: var(--radius-lg);
+  transition: transform var(--dur-base) var(--ease-brand), border-color var(--dur-base) var(--ease-brand);
+}
+.feature-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--brand-line-strong);
+}
+
+/* Primary pill CTA — emerald bg, ink-on-emerald text */
+.btn-primary {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 14px 28px;
+  border-radius: var(--radius-pill);
+  background: var(--brand-emerald);
+  color: #050a08;
+  font-weight: 700;
+  font-size: 0.875rem;
+  border: 0;
+  cursor: pointer;
+  transition: transform var(--dur-base) var(--ease-brand), background var(--dur-base) var(--ease-brand);
+  text-decoration: none;
+}
+.btn-primary:hover { transform: translateY(-2px); background: var(--brand-emerald-deep); }
+.btn-primary.is-glow { box-shadow: var(--shadow-glow-sm); }
+
+.btn-ghost {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 14px 28px;
+  border-radius: var(--radius-pill);
+  background: var(--brand-surface);
+  color: var(--brand-ink);
+  font-weight: 600;
+  font-size: 0.875rem;
+  border: 1px solid var(--brand-line);
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  transition: transform var(--dur-base) var(--ease-brand), border-color var(--dur-base) var(--ease-brand);
+  text-decoration: none;
+}
+.btn-ghost:hover { transform: translateY(-2px); border-color: var(--brand-line-strong); }
+
+/* Body gradient — ambient "well-funded startup" glow */
+.brand-bg-gradient {
+  background:
+    radial-gradient(1100px 620px at -8% -10%, var(--hero-a), transparent 58%),
+    radial-gradient(1050px 620px at 112% -12%, var(--hero-b), transparent 62%),
+    radial-gradient(720px 380px at 50% 115%, rgba(16,185,129,0.06), transparent 68%),
+    var(--brand-bg);
+}
+
+/* Subtle grid texture overlay (apply to body::after) */
+.brand-bg-grid::after {
+  content: "";
+  position: fixed; inset: 0;
+  pointer-events: none; z-index: -1;
+  opacity: 0.06;
+  background-image:
+    linear-gradient(rgba(52,211,153,0.15) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(52,211,153,0.10) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: radial-gradient(circle at 50% 30%, black, transparent 70%);
+}
+
+/* Glow pulse for CTAs */
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: var(--shadow-glow-sm); }
+  50%      { box-shadow: var(--shadow-glow-md); }
+}
+.glow-pulse { animation: glow-pulse 3s ease-in-out infinite; }
+
+/* Rise-in */
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.rise-in { animation: rise-in 700ms var(--ease-brand) both; }
+
+/* Shared focus ring */
+:focus-visible {
+  outline: 2px solid var(--brand-emerald);
+  outline-offset: 2px;
+}

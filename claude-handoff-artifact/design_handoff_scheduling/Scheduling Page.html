@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Book time · All AI, No BS</title>
+<link rel="icon" href="assets/favicon.svg">
+<link rel="stylesheet" href="colors_and_type.css">
+<style>
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--font-sans);
+    color: var(--brand-ink);
+    overflow-x: hidden;
+    background-color: var(--brand-bg);
+    background:
+      radial-gradient(1100px 620px at -8% -10%, var(--hero-a), transparent 58%),
+      radial-gradient(1050px 620px at 112% -12%, var(--hero-b), transparent 62%),
+      radial-gradient(720px 380px at 50% 115%, rgba(16,185,129,0.06), transparent 68%),
+      var(--brand-bg);
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+  body::after {
+    content: ""; position: fixed; inset: 0; pointer-events: none; z-index: -1;
+    opacity: 0.06;
+    background-image:
+      linear-gradient(rgba(52,211,153,0.15) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(52,211,153,0.10) 1px, transparent 1px);
+    background-size: 32px 32px;
+    mask-image: radial-gradient(circle at 50% 30%, black, transparent 70%);
+  }
+  a { color: var(--brand-emerald-deep); text-decoration: none; }
+  a:hover { color: var(--brand-emerald); }
+  .btn-primary {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 14px 26px; border-radius: 999px;
+    background: var(--brand-emerald); color: #050a08;
+    font-family: var(--font-sans); font-weight: 700; font-size: 14px;
+    border: 0; cursor: pointer; text-decoration: none;
+    transition: background-color 180ms ease, transform 180ms ease, box-shadow 180ms ease;
+  }
+  .btn-primary:hover { background: var(--brand-emerald-deep); color: #050a08; transform: translateY(-1px); }
+  .btn-primary:active { background: var(--brand-emerald-dim); }
+  .btn-primary.is-glow { animation: glow-pulse 3s ease-in-out infinite; }
+  .btn-ghost {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 14px 26px; border-radius: 999px;
+    background: transparent; color: var(--brand-ink);
+    border: 1px solid var(--brand-line-strong);
+    font-family: var(--font-sans); font-weight: 700; font-size: 14px;
+    cursor: pointer; text-decoration: none;
+    transition: all 180ms ease;
+  }
+  .btn-ghost:hover { background: var(--link-bg-hover); border-color: var(--brand-emerald); color: var(--brand-emerald); }
+  @keyframes glow-pulse {
+    0%,100% { box-shadow: 0 0 20px rgba(52,211,153,0.15), 0 0 60px rgba(52,211,153,0.05); }
+    50% { box-shadow: 0 0 30px rgba(52,211,153,0.28), 0 0 80px rgba(52,211,153,0.12); }
+  }
+  .glass-card {
+    border: 1px solid var(--brand-line);
+    background: linear-gradient(165deg, var(--brand-surface-strong), var(--brand-surface));
+    box-shadow: 0 1px 0 var(--brand-inset-glint) inset, 0 22px 44px rgba(0,0,0,0.25), 0 6px 18px rgba(0,0,0,0.15);
+    backdrop-filter: blur(12px);
+    border-radius: 24px;
+  }
+  .feature-card {
+    border: 1px solid var(--brand-line);
+    background: linear-gradient(165deg, var(--brand-surface-strong), var(--brand-surface));
+    box-shadow: 0 1px 0 var(--brand-inset-glint) inset, 0 18px 34px rgba(0,0,0,0.2), 0 4px 14px rgba(0,0,0,0.10);
+    border-radius: 16px;
+    transition: transform 180ms ease, border-color 180ms ease;
+  }
+  .feature-card:hover { transform: translateY(-2px); border-color: rgba(52,211,153,0.30); }
+  .rise-in { animation: rise-in 600ms cubic-bezier(0.16,1,0.3,1) both; }
+  @keyframes rise-in { from { opacity:0; transform: translateY(12px);} to { opacity:1; transform:translateY(0);} }
+
+  input::placeholder, textarea::placeholder { color: var(--brand-ink-soft); opacity: 0.55; }
+  input:focus, textarea:focus { border-color: var(--brand-emerald) !important; }
+
+  /* Tweaks panel */
+  .tweaks-panel {
+    position: fixed; bottom: 20px; right: 20px; z-index: 100;
+    width: 300px;
+    border: 1px solid var(--brand-line-strong);
+    background: rgba(5,10,8,0.95);
+    backdrop-filter: blur(16px);
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 22px 44px rgba(0,0,0,0.5);
+    font-family: var(--font-sans);
+    display: none;
+  }
+  .tweaks-panel.is-open { display: block; }
+  .tweak-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--brand-line); }
+  .tweak-row:last-child { border-bottom: 0; }
+  .tweak-label { font-size: 12px; color: var(--brand-ink); font-weight: 600; }
+  .toggle { width: 36px; height: 20px; border-radius: 999px; background: rgba(52,211,153,0.15); border: 1px solid var(--brand-line); cursor: pointer; position: relative; transition: all 180ms ease; }
+  .toggle.on { background: var(--brand-emerald); }
+  .toggle::after { content:""; position:absolute; top:1px; left:1px; width:16px; height:16px; border-radius:50%; background:white; transition: transform 180ms ease; }
+  .toggle.on::after { transform: translateX(16px); background: #050a08; }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+
+  @media (max-width: 900px) {
+    .hero-grid { grid-template-columns: 1fr !important; }
+    .split-cols { grid-template-columns: 1fr !important; }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" data-presets="react" src="MeetingData.jsx"></script>
+<script type="text/babel" data-presets="react" src="BookingFlow.jsx"></script>
+<script type="text/babel" data-presets="react" src="BookingSteps.jsx"></script>
+<script type="text/babel" data-presets="react" src="HeroAndCards.jsx"></script>
+<script type="text/babel" data-presets="react" src="PageSections.jsx"></script>
+
+<script type="text/babel" data-presets="react">
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "showFounderCard": true,
+  "showTestimonials": true,
+  "showClientStrip": true,
+  "compactCards": false
+}/*EDITMODE-END*/;
+
+function App() {
+  const [bookingId, setBookingId] = React.useState(null);
+  const [tweaks, setTweaks] = React.useState(TWEAK_DEFAULTS);
+  const [tweaksOpen, setTweaksOpen] = React.useState(false);
+  const bookingRef = React.useRef(null);
+
+  // Tweaks activation
+  React.useEffect(() => {
+    const handler = (e) => {
+      if (!e.data) return;
+      if (e.data.type === '__activate_edit_mode') setTweaksOpen(true);
+      if (e.data.type === '__deactivate_edit_mode') setTweaksOpen(false);
+    };
+    window.addEventListener('message', handler);
+    window.parent.postMessage({ type: '__edit_mode_available' }, '*');
+    return () => window.removeEventListener('message', handler);
+  }, []);
+
+  const setTweak = (key, val) => {
+    const next = { ...tweaks, [key]: val };
+    setTweaks(next);
+    window.parent.postMessage({ type: '__edit_mode_set_keys', edits: { [key]: val } }, '*');
+  };
+
+  const scrollToBook = (meetingId) => {
+    setBookingId(meetingId);
+    setTimeout(() => {
+      bookingRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 50);
+  };
+
+  const selfServe = MEETINGS.filter(m => m.tier === 'self-serve');
+  const paid = MEETINGS.filter(m => m.tier === 'paid');
+
+  return (
+    <div>
+      <Header onScrollToBook={scrollToBook} />
+
+      <div className="hero-grid">
+        <Hero showFounder={tweaks.showFounderCard} onScrollToBook={scrollToBook} />
+      </div>
+
+      {tweaks.showClientStrip && <TrustStrip />}
+
+      {/* All meetings */}
+      <section id="all-meetings" style={{ padding: '80px 24px', maxWidth: 1200, margin: '0 auto' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 20, marginBottom: 32 }}>
+          <div>
+            <p className="section-kicker" style={{ margin: '0 0 12px' }}>All sessions</p>
+            <h2 className="display-title" style={{ fontSize: 'clamp(32px,4vw,48px)', margin: 0, fontWeight: 700, lineHeight: 1.1 }}>
+              Pick the one that fits.
+            </h2>
+          </div>
+          <p style={{ fontSize: 13, color: 'var(--brand-ink-soft)', maxWidth: 360, margin: 0, lineHeight: 1.55 }}>
+            Free intros are self-serve. Paid sessions unlock when you book — deeper work, written follow-up, guaranteed turnaround.
+          </p>
+        </div>
+
+        <div style={{ marginBottom: 36 }}>
+          <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--brand-emerald)', margin: '0 0 16px' }}>
+            ◆ Self-serve · Free
+          </p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px,1fr))', gap: 20 }}>
+            {selfServe.map(m => <MeetingCard key={m.id} meeting={m} onBook={scrollToBook} compact={tweaks.compactCards} />)}
+          </div>
+        </div>
+
+        <div>
+          <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--brand-ink-soft)', margin: '0 0 16px' }}>
+            ◆ Paid engagements
+          </p>
+          <div style={{ display: 'grid', gridTemplateColumns: tweaks.compactCards ? 'repeat(auto-fill,minmax(240px,1fr))' : 'repeat(auto-fill,minmax(300px,1fr))', gap: 20 }}>
+            {paid.map(m => <MeetingCard key={m.id} meeting={m} onBook={scrollToBook} compact={tweaks.compactCards} />)}
+          </div>
+        </div>
+      </section>
+
+      {/* Booking flow */}
+      <section ref={bookingRef} id="book" style={{ padding: '40px 24px 80px', position: 'relative' }}>
+        {bookingId ? (
+          <div className="rise-in">
+            <BookingFlow
+              meetingId={bookingId}
+              onClose={() => setBookingId(null)}
+              onReset={() => setBookingId(null)}
+            />
+          </div>
+        ) : (
+          <div style={{ maxWidth: 880, margin: '0 auto', textAlign: 'center', padding: '60px 24px', border: '1px dashed var(--brand-line)', borderRadius: 24, background: 'rgba(10,18,14,0.2)' }}>
+            <p className="section-kicker" style={{ margin: '0 0 10px' }}>Booking</p>
+            <h3 className="display-title" style={{ fontSize: 28, margin: '0 0 12px', lineHeight: 1.15 }}>
+              Pick a session above to start.
+            </h3>
+            <p style={{ fontSize: 14, color: 'var(--brand-ink-soft)', margin: 0, maxWidth: 440, marginLeft: 'auto', marginRight: 'auto', lineHeight: 1.55 }}>
+              The scheduler opens here with calendar, intake, and payment in one flow. Four steps, max.
+            </p>
+          </div>
+        )}
+      </section>
+
+      <WhatToExpect />
+      {tweaks.showTestimonials && <Testimonials />}
+      <FAQ />
+      <PolicyStrip />
+      <FinalCTA onScrollToBook={scrollToBook} />
+      <Footer />
+
+      {/* Tweaks panel */}
+      <div className={`tweaks-panel ${tweaksOpen ? 'is-open' : ''}`}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+          <p className="section-kicker" style={{ margin: 0 }}>Tweaks</p>
+          <span style={{ fontSize: 10, color: 'var(--brand-ink-soft)' }}>Live · persists</span>
+        </div>
+        {[
+          { key: 'showFounderCard', label: 'Founder card in hero' },
+          { key: 'showClientStrip', label: 'Client logo strip' },
+          { key: 'showTestimonials', label: 'Testimonials section' },
+          { key: 'compactCards', label: 'Compact meeting cards' },
+        ].map(t => (
+          <div key={t.key} className="tweak-row">
+            <span className="tweak-label">{t.label}</span>
+            <button
+              onClick={() => setTweak(t.key, !tweaks[t.key])}
+              className={`toggle ${tweaks[t.key] ? 'on' : ''}`}
+              aria-label={t.label}
+            />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
