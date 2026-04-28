@@ -13,7 +13,7 @@ const LABEL_STYLE =
   'text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--brand-ink-soft)]'
 
 export function StepIntake({ intake, setIntake, meeting }: StepIntakeProps) {
-  const update = <K extends keyof Intake>(key: K, value: Intake[K]) =>
+  const update = <TKey extends keyof Intake>(key: TKey, value: Intake[TKey]) =>
     setIntake({ ...intake, [key]: value })
 
   const isFree = meeting.price === 0

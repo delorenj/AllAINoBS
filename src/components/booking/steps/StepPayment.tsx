@@ -19,7 +19,7 @@ export function StepPayment({
   paymentData,
   setPaymentData,
 }: StepPaymentProps) {
-  const update = <K extends keyof PaymentData>(key: K, value: PaymentData[K]) =>
+  const update = <TKey extends keyof PaymentData>(key: TKey, value: PaymentData[TKey]) =>
     setPaymentData({ ...paymentData, [key]: value })
 
   return (

@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { generateConfirmationId } from '#/lib/booking'
+import type { BookingRecord } from '#/server/booking/schema'
 import type { CalendarDay, Intake, Meeting } from '#/types/booking'
 
 interface StepConfirmedProps {
@@ -7,6 +8,8 @@ interface StepConfirmedProps {
   selectedDate: CalendarDay | null
   selectedSlot: string | null
   intake: Intake
+  // Server-returned record. Null only on the paid path until Phase 4 wires it.
+  booking: BookingRecord | null
   onReset: () => void
 }
 
@@ -15,9 +18,15 @@ export function StepConfirmed({
   selectedDate,
   selectedSlot,
   intake,
+  booking,
   onReset,
 }: StepConfirmedProps) {
-  const confirmationId = useMemo(() => generateConfirmationId(), [])
+  // Fall back to a client-generated id only when the server record is missing
+  // (paid path placeholder). The free path always passes through booking.
+  const fallbackId = useMemo(() => generateConfirmationId(), [])
+  const confirmationId = booking?.confirmationId ?? fallbackId
+
+  const meetingUrl = booking?.googleMeetUrl ?? null
 
   return (
     <div className="rise-in px-0 pt-4 pb-2 text-center">
@@ -34,7 +43,7 @@ export function StepConfirmed({
         ✓
       </div>
 
-      <p className="section-kicker mb-2">Confirmed · Calendar invite sent</p>
+      <p className="section-kicker mb-2">Confirmed · Calendar invite on the way</p>
       <h3
         className="display-title mb-5 text-[32px] leading-[1.1]"
         style={{ fontWeight: 700 }}
@@ -56,7 +65,20 @@ export function StepConfirmed({
           </dd>
 
           <dt className="text-[var(--brand-ink-soft)]">Where</dt>
-          <dd className="font-bold">Zoom link in your email</dd>
+          <dd className="font-bold">
+            {meetingUrl ? (
+              <a
+                href={meetingUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="text-[var(--brand-emerald)] underline-offset-2 hover:underline"
+              >
+                Google Meet link
+              </a>
+            ) : (
+              'Google Meet link in your email'
+            )}
+          </dd>
 
           <dt className="text-[var(--brand-ink-soft)]">Confirmation</dt>
           <dd

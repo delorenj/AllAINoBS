@@ -61,7 +61,7 @@ export function StepMeeting({ meeting, onChoose }: StepMeetingProps) {
           </div>
           <div className="flex items-center justify-between">
             <dt className="text-[var(--brand-ink-soft)]">Format</dt>
-            <dd className="font-bold">Zoom (link after booking)</dd>
+            <dd className="font-bold">Google Meet (link after booking)</dd>
           </div>
           <div className="flex items-center justify-between">
             <dt className="text-[var(--brand-ink-soft)]">Price</dt>

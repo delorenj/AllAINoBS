@@ -25,13 +25,16 @@ export type BookingStatusDto = z.infer<typeof bookingStatusSchema>
 
 // --- Booking create input (what the client posts) ---
 
-// slotIso is the canonical UTC instant for the chosen slot. The client computes
-// it from (selectedDate.iso, selectedSlot label) using America/New_York tz.
-// We re-validate server-side that it falls inside the meeting's availability.
+// Client posts the natural (date, label) tuple. Server converts to canonical
+// UTC via slotToUtc() so timezone math lives in one place.
 export const bookingCreateInputSchema = z.object({
   meetingId: z.string().min(1).max(64),
-  slotIso: z.string().datetime({ offset: true }),
-  slotLabel: z.string().min(1).max(64),
+  dateIso: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'dateIso must be YYYY-MM-DD'),
+  slotLabel: z
+    .string()
+    .regex(/^\d{1,2}:\d{2}\s+(AM|PM)$/i, 'slotLabel must be like "10:00 AM"'),
   intake: intakeSchema,
   // Stripe PaymentIntent id, only present once paid path completes client-side.
   // Free path leaves this null.

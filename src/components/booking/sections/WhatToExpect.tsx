@@ -12,7 +12,7 @@ const STEPS = [
   {
     n: '03',
     t: 'Work the problem',
-    d: 'We meet on Zoom. No decks. Camera optional on your side. Screenshare encouraged. Recorded so you can re-watch.',
+    d: 'We meet on Google Meet. No decks. Camera optional on your side. Screenshare encouraged. Recorded so you can re-watch.',
   },
   {
     n: '04',

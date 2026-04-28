@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import { createBooking } from '#/server/booking/createBooking'
+import type { BookingRecord } from '#/server/booking/schema'
 import type { CalendarDay, Intake, Meeting, PaymentData } from '#/types/booking'
 import { Stepper } from './Stepper'
 import { StepMeeting } from './steps/StepMeeting'
@@ -34,6 +36,9 @@ export function BookingFlow({ meeting, onReset }: BookingFlowProps) {
   const [intake, setIntake] = useState<Intake>(EMPTY_INTAKE)
   const [paymentData, setPaymentData] = useState<PaymentData>(EMPTY_PAYMENT)
   const [processing, setProcessing] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
+  const [confirmedBooking, setConfirmedBooking] =
+    useState<BookingRecord | null>(null)
 
   // Reset state when meeting changes
   useEffect(() => {
@@ -41,6 +46,8 @@ export function BookingFlow({ meeting, onReset }: BookingFlowProps) {
     setSelectedDate(null)
     setSelectedSlot(null)
     setProcessing(false)
+    setSubmitError(null)
+    setConfirmedBooking(null)
   }, [meeting.id])
 
   const confirmedStepIndex = stepLabels.length - 1
@@ -60,19 +67,55 @@ export function BookingFlow({ meeting, onReset }: BookingFlowProps) {
     return true
   }
 
+  // Free path: persist booking server-side. Paid path keeps the existing
+  // 1400ms placeholder until Phase 4 wires Stripe.
+  const finalizeFree = async () => {
+    if (!selectedDate || !selectedSlot) {
+      setSubmitError('Pick a date and time first.')
+      return
+    }
+    setProcessing(true)
+    setSubmitError(null)
+    try {
+      const result = await createBooking({
+        data: {
+          meetingId: meeting.id,
+          dateIso: selectedDate.iso,
+          slotLabel: selectedSlot,
+          intake,
+        },
+      })
+      if (result.success) {
+        setConfirmedBooking(result.booking)
+        setStep((s) => s + 1)
+      } else {
+        setSubmitError(result.error)
+      }
+    } catch (err) {
+      setSubmitError(
+        err instanceof Error ? err.message : 'Network error. Try again.',
+      )
+    } finally {
+      setProcessing(false)
+    }
+  }
+
   const advance = () => {
     if (!canAdvance() || processing) return
-    const isFinalize =
-      (isFree && step === 2) || (!isFree && step === 3)
-    if (isFinalize) {
+    if (isFree && step === 2) {
+      void finalizeFree()
+      return
+    }
+    if (!isFree && step === 3) {
+      // Paid finalize placeholder until Phase 4 wires Stripe Payment Element.
       setProcessing(true)
       window.setTimeout(() => {
         setProcessing(false)
-        setStep(step + 1)
+        setStep((s) => s + 1)
       }, 1400)
-    } else {
-      setStep(step + 1)
+      return
     }
+    setStep((s) => s + 1)
   }
 
   const back = () => {
@@ -150,8 +193,18 @@ export function BookingFlow({ meeting, onReset }: BookingFlowProps) {
           selectedDate={selectedDate}
           selectedSlot={selectedSlot}
           intake={intake}
+          booking={confirmedBooking}
           onReset={onReset}
         />
+      )}
+
+      {submitError && step > 0 && !onConfirmedStep && (
+        <p
+          role="alert"
+          className="mt-4 rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-300"
+        >
+          {submitError}
+        </p>
       )}
 
       {/* Footer actions (hide on step 0 because StepMeeting owns its own primary, hide on confirmed) */}
@@ -160,7 +213,8 @@ export function BookingFlow({ meeting, onReset }: BookingFlowProps) {
           <button
             type="button"
             onClick={back}
-            className="inline-flex rounded-full border border-[var(--brand-line-strong,rgba(52,211,153,0.3))] bg-[var(--brand-surface)] px-5 py-2.5 text-[13px] font-semibold text-[var(--brand-ink)] transition hover:-translate-y-0.5 hover:border-[var(--brand-emerald)]"
+            disabled={processing}
+            className="inline-flex rounded-full border border-[var(--brand-line-strong,rgba(52,211,153,0.3))] bg-[var(--brand-surface)] px-5 py-2.5 text-[13px] font-semibold text-[var(--brand-ink)] transition hover:-translate-y-0.5 hover:border-[var(--brand-emerald)] disabled:opacity-40"
           >
             ← Back
           </button>
