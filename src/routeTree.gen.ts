@@ -24,6 +24,7 @@ import { Route as DemoStrapiArticleIdRouteImport } from './routes/demo/strapi.$a
 import { Route as DemoFormSimpleRouteImport } from './routes/demo/form.simple'
 import { Route as DemoFormAddressRouteImport } from './routes/demo/form.address'
 import { Route as ApiWebhooksStripeRouteImport } from './routes/api/webhooks/stripe'
+import { Route as ApiBookIcsConfirmationIdRouteImport } from './routes/api/book/ics/$confirmationId'
 
 const BookRoute = BookRouteImport.update({
   id: '/book',
@@ -100,6 +101,12 @@ const ApiWebhooksStripeRoute = ApiWebhooksStripeRouteImport.update({
   path: '/api/webhooks/stripe',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiBookIcsConfirmationIdRoute =
+  ApiBookIcsConfirmationIdRouteImport.update({
+    id: '/api/book/ics/$confirmationId',
+    path: '/api/book/ics/$confirmationId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -117,6 +124,7 @@ export interface FileRoutesByFullPath {
   '/demo/form/address': typeof DemoFormAddressRoute
   '/demo/form/simple': typeof DemoFormSimpleRoute
   '/demo/strapi/$articleId': typeof DemoStrapiArticleIdRoute
+  '/api/book/ics/$confirmationId': typeof ApiBookIcsConfirmationIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -134,6 +142,7 @@ export interface FileRoutesByTo {
   '/demo/form/address': typeof DemoFormAddressRoute
   '/demo/form/simple': typeof DemoFormSimpleRoute
   '/demo/strapi/$articleId': typeof DemoStrapiArticleIdRoute
+  '/api/book/ics/$confirmationId': typeof ApiBookIcsConfirmationIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -152,6 +161,7 @@ export interface FileRoutesById {
   '/demo/form/address': typeof DemoFormAddressRoute
   '/demo/form/simple': typeof DemoFormSimpleRoute
   '/demo/strapi/$articleId': typeof DemoStrapiArticleIdRoute
+  '/api/book/ics/$confirmationId': typeof ApiBookIcsConfirmationIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -171,6 +181,7 @@ export interface FileRouteTypes {
     | '/demo/form/address'
     | '/demo/form/simple'
     | '/demo/strapi/$articleId'
+    | '/api/book/ics/$confirmationId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -188,6 +199,7 @@ export interface FileRouteTypes {
     | '/demo/form/address'
     | '/demo/form/simple'
     | '/demo/strapi/$articleId'
+    | '/api/book/ics/$confirmationId'
   id:
     | '__root__'
     | '/'
@@ -205,6 +217,7 @@ export interface FileRouteTypes {
     | '/demo/form/address'
     | '/demo/form/simple'
     | '/demo/strapi/$articleId'
+    | '/api/book/ics/$confirmationId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -222,6 +235,7 @@ export interface RootRouteChildren {
   ApiWebhooksStripeRoute: typeof ApiWebhooksStripeRoute
   DemoFormAddressRoute: typeof DemoFormAddressRoute
   DemoFormSimpleRoute: typeof DemoFormSimpleRoute
+  ApiBookIcsConfirmationIdRoute: typeof ApiBookIcsConfirmationIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -331,6 +345,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiWebhooksStripeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/book/ics/$confirmationId': {
+      id: '/api/book/ics/$confirmationId'
+      path: '/api/book/ics/$confirmationId'
+      fullPath: '/api/book/ics/$confirmationId'
+      preLoaderRoute: typeof ApiBookIcsConfirmationIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -361,6 +382,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiWebhooksStripeRoute: ApiWebhooksStripeRoute,
   DemoFormAddressRoute: DemoFormAddressRoute,
   DemoFormSimpleRoute: DemoFormSimpleRoute,
+  ApiBookIcsConfirmationIdRoute: ApiBookIcsConfirmationIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

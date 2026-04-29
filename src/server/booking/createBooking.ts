@@ -5,6 +5,7 @@ import type { BookingCreateInput, BookingCreateResult } from './schema'
 import { insertBooking, toBookingRecord } from './repo'
 import { slotToUtc } from './slot'
 import { sendBookingEmailViaN8n } from './sendEmailViaN8n'
+import { composeIcsForBooking } from './composeIcsForBooking'
 
 const FROM_ADDRESS = 'jarad@automaticai.io'
 const BRAND_TAGLINE = 'All AI · No BS'
@@ -81,6 +82,12 @@ export const createBooking = createServerFn({ method: 'POST' })
       { weekday: 'long', month: 'long', day: 'numeric' },
     )
 
+    const icsBody = composeIcsForBooking(booking)
+    const icsBase64 =
+      typeof Buffer !== 'undefined'
+        ? Buffer.from(icsBody, 'utf8').toString('base64')
+        : btoa(unescape(encodeURIComponent(icsBody)))
+
     void sendBookingEmailViaN8n(
       {
         confirmationId: record.confirmationId,
@@ -92,9 +99,11 @@ export const createBooking = createServerFn({ method: 'POST' })
         slotIso: record.slotIso,
         slotLabel: record.slotLabel,
         fullDateLabel,
-        meetingUrl: record.googleMeetUrl, // null until Phase 4 lands gcal
+        meetingUrl: record.googleMeetUrl, // null until Phase 5 lands gcal
         fromAddress: FROM_ADDRESS,
         brandTagline: BRAND_TAGLINE,
+        icsBase64,
+        icsFilename: `booking-${record.confirmationId}.ics`,
       },
       process.env.N8N_BOOKING_WEBHOOK_URL,
     )

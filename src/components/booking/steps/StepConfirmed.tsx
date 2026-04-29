@@ -106,13 +106,22 @@ export function StepConfirmed({
         >
           Book another session
         </button>
-        <a
-          href="#"
-          onClick={(e) => e.preventDefault()}
-          className="inline-flex rounded-full bg-[var(--brand-emerald)] px-5 py-3 text-xs font-bold text-[#050a08] no-underline transition hover:-translate-y-0.5 hover:bg-[var(--brand-emerald-deep)]"
-        >
-          Add to calendar ↓
-        </a>
+        {booking ? (
+          <a
+            href={`/api/book/ics/${booking.confirmationId}`}
+            download={`booking-${booking.confirmationId}.ics`}
+            className="inline-flex rounded-full bg-[var(--brand-emerald)] px-5 py-3 text-xs font-bold text-[#050a08] no-underline transition hover:-translate-y-0.5 hover:bg-[var(--brand-emerald-deep)]"
+          >
+            Add to calendar ↓
+          </a>
+        ) : (
+          <span
+            aria-disabled="true"
+            className="inline-flex rounded-full bg-[var(--brand-emerald)]/40 px-5 py-3 text-xs font-bold text-[#050a08] opacity-60"
+          >
+            Add to calendar ↓
+          </span>
+        )}
       </div>
     </div>
   )

@@ -8,6 +8,7 @@ import {
   patchBooking,
 } from './repo'
 import { sendBookingEmailViaN8n } from './sendEmailViaN8n'
+import { composeIcsForBooking } from './composeIcsForBooking'
 import { getMeeting } from '#/data/meetings'
 
 const FROM_ADDRESS = 'jarad@automaticai.io'
@@ -139,6 +140,12 @@ async function onPaymentIntentSucceeded(
     timeZone: 'America/New_York',
   })
 
+  const icsBody = composeIcsForBooking(booking)
+  const icsBase64 =
+    typeof Buffer !== 'undefined'
+      ? Buffer.from(icsBody, 'utf8').toString('base64')
+      : btoa(unescape(encodeURIComponent(icsBody)))
+
   void sendBookingEmailViaN8n(
     {
       confirmationId: booking.confirmationId,
@@ -153,6 +160,8 @@ async function onPaymentIntentSucceeded(
       meetingUrl: booking.googleMeetUrl,
       fromAddress: FROM_ADDRESS,
       brandTagline: BRAND_TAGLINE,
+      icsBase64,
+      icsFilename: `booking-${booking.confirmationId}.ics`,
     },
     process.env.N8N_BOOKING_WEBHOOK_URL,
   )

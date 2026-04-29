@@ -17,6 +17,11 @@ export interface BookingEmailPayload {
   meetingUrl?: string | null
   fromAddress: string
   brandTagline: string
+  // Full RFC 5545 ics body, base64-encoded for safe transport in JSON. The
+  // n8n workflow attaches this as `booking-${confirmationId}.ics` on the
+  // outgoing Gmail message.
+  icsBase64?: string
+  icsFilename?: string
 }
 
 export interface N8nDispatchResult {
