@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm'
 import {
+  boolean,
   date,
   index,
   integer,
@@ -71,6 +72,15 @@ export const bookings = pgTable(
 
     // Trace pointer to the n8n run that owns the email side-effect.
     n8nEmailRunId: text('n8n_email_run_id'),
+
+    // Did the attendee actually show up. Separate from `status` so a paid
+    // booking can be flagged no-show without leaving the lifecycle states.
+    // Refunds (per the 50% no-show policy) are handled manually in Stripe.
+    noShow: boolean('no_show').notNull().default(false),
+
+    // Optional admin annotation. Used for "rescheduled in DM" or other
+    // off-system notes that need to live with the row.
+    adminNotes: text('admin_notes'),
 
     createdAt: timestamp('created_at', { withTimezone: true })
       .notNull()

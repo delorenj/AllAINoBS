@@ -20,6 +20,7 @@ import { Route as DemoNeonRouteImport } from './routes/demo/neon'
 import { Route as DemoDrizzleRouteImport } from './routes/demo/drizzle'
 import { Route as DemoClerkRouteImport } from './routes/demo/clerk'
 import { Route as DemoApolloClientRouteImport } from './routes/demo.apollo-client'
+import { Route as BookAdminRouteImport } from './routes/book.admin'
 import { Route as DemoStrapiArticleIdRouteImport } from './routes/demo/strapi.$articleId'
 import { Route as DemoFormSimpleRouteImport } from './routes/demo/form.simple'
 import { Route as DemoFormAddressRouteImport } from './routes/demo/form.address'
@@ -81,6 +82,11 @@ const DemoApolloClientRoute = DemoApolloClientRouteImport.update({
   path: '/demo/apollo-client',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BookAdminRoute = BookAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => BookRoute,
+} as any)
 const DemoStrapiArticleIdRoute = DemoStrapiArticleIdRouteImport.update({
   id: '/$articleId',
   path: '/$articleId',
@@ -111,7 +117,8 @@ const ApiBookIcsConfirmationIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
-  '/book': typeof BookRoute
+  '/book': typeof BookRouteWithChildren
+  '/book/admin': typeof BookAdminRoute
   '/demo/apollo-client': typeof DemoApolloClientRoute
   '/demo/clerk': typeof DemoClerkRoute
   '/demo/drizzle': typeof DemoDrizzleRoute
@@ -129,7 +136,8 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
-  '/book': typeof BookRoute
+  '/book': typeof BookRouteWithChildren
+  '/book/admin': typeof BookAdminRoute
   '/demo/apollo-client': typeof DemoApolloClientRoute
   '/demo/clerk': typeof DemoClerkRoute
   '/demo/drizzle': typeof DemoDrizzleRoute
@@ -148,7 +156,8 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
-  '/book': typeof BookRoute
+  '/book': typeof BookRouteWithChildren
+  '/book/admin': typeof BookAdminRoute
   '/demo/apollo-client': typeof DemoApolloClientRoute
   '/demo/clerk': typeof DemoClerkRoute
   '/demo/drizzle': typeof DemoDrizzleRoute
@@ -169,6 +178,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/book'
+    | '/book/admin'
     | '/demo/apollo-client'
     | '/demo/clerk'
     | '/demo/drizzle'
@@ -187,6 +197,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/book'
+    | '/book/admin'
     | '/demo/apollo-client'
     | '/demo/clerk'
     | '/demo/drizzle'
@@ -205,6 +216,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/book'
+    | '/book/admin'
     | '/demo/apollo-client'
     | '/demo/clerk'
     | '/demo/drizzle'
@@ -223,7 +235,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
-  BookRoute: typeof BookRoute
+  BookRoute: typeof BookRouteWithChildren
   DemoApolloClientRoute: typeof DemoApolloClientRoute
   DemoClerkRoute: typeof DemoClerkRoute
   DemoDrizzleRoute: typeof DemoDrizzleRoute
@@ -317,6 +329,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DemoApolloClientRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/book/admin': {
+      id: '/book/admin'
+      path: '/admin'
+      fullPath: '/book/admin'
+      preLoaderRoute: typeof BookAdminRouteImport
+      parentRoute: typeof BookRoute
+    }
     '/demo/strapi/$articleId': {
       id: '/demo/strapi/$articleId'
       path: '/$articleId'
@@ -355,6 +374,16 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface BookRouteChildren {
+  BookAdminRoute: typeof BookAdminRoute
+}
+
+const BookRouteChildren: BookRouteChildren = {
+  BookAdminRoute: BookAdminRoute,
+}
+
+const BookRouteWithChildren = BookRoute._addFileChildren(BookRouteChildren)
+
 interface DemoStrapiRouteChildren {
   DemoStrapiArticleIdRoute: typeof DemoStrapiArticleIdRoute
 }
@@ -370,7 +399,7 @@ const DemoStrapiRouteWithChildren = DemoStrapiRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
-  BookRoute: BookRoute,
+  BookRoute: BookRouteWithChildren,
   DemoApolloClientRoute: DemoApolloClientRoute,
   DemoClerkRoute: DemoClerkRoute,
   DemoDrizzleRoute: DemoDrizzleRoute,

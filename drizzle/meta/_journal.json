@@ -8,6 +8,13 @@
       "when": 1777254614768,
       "tag": "0000_wise_yellowjacket",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1777458945145,
+      "tag": "0001_crazy_starbolt",
+      "breakpoints": true
     }
   ]
 }
