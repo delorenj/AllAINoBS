@@ -1,7 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import { Elements, useElements, useStripe } from '@stripe/react-stripe-js'
+import type { StripeElementsOptions } from '@stripe/stripe-js'
 import { createBooking } from '#/server/booking/createBooking'
+import { createPaymentIntent } from '#/server/booking/createPaymentIntent'
 import type { BookingRecord } from '#/server/booking/schema'
-import type { CalendarDay, Intake, Meeting, PaymentData } from '#/types/booking'
+import { getStripeBrowser } from '#/lib/stripe-browser'
+import type { CalendarDay, Intake, Meeting } from '#/types/booking'
 import { Stepper } from './Stepper'
 import { StepMeeting } from './steps/StepMeeting'
 import { StepTime } from './steps/StepTime'
@@ -22,25 +26,63 @@ const EMPTY_INTAKE: Intake = {
   repo: '',
 }
 
-const EMPTY_PAYMENT: PaymentData = { card: '', exp: '', cvc: '', zip: '' }
+// Payment Element styling locked to the dark-first emerald tokens. Stripe
+// expects raw colors, not CSS vars, so the values are inlined here.
+const STRIPE_APPEARANCE: StripeElementsOptions['appearance'] = {
+  theme: 'night',
+  variables: {
+    colorPrimary: '#34d399',
+    colorBackground: '#0a120e',
+    colorText: '#e8f0ec',
+    colorTextSecondary: '#9cb3a8',
+    colorTextPlaceholder: '#5a7064',
+    colorDanger: '#f87171',
+    fontFamily: 'Manrope, ui-sans-serif, system-ui, sans-serif',
+    borderRadius: '10px',
+  },
+  rules: {
+    '.Input': {
+      border: '1px solid rgba(52,211,153,0.12)',
+      backgroundColor: 'rgba(10,18,14,0.6)',
+    },
+    '.Input:focus': {
+      borderColor: '#34d399',
+      boxShadow: '0 0 0 1px rgba(52,211,153,0.3)',
+    },
+    '.Tab': {
+      border: '1px solid rgba(52,211,153,0.12)',
+      backgroundColor: 'rgba(10,18,14,0.6)',
+    },
+    '.Tab--selected': {
+      borderColor: '#34d399',
+      backgroundColor: 'rgba(52,211,153,0.08)',
+    },
+  },
+}
 
 export function BookingFlow({ meeting, onReset }: BookingFlowProps) {
   const isFree = meeting.price === 0
-  const stepLabels = isFree
-    ? (['Meeting', 'Time', 'Details', 'Confirmed'] as const)
-    : (['Meeting', 'Time', 'Details', 'Payment', 'Confirmed'] as const)
 
+  return isFree ? (
+    <FreeBookingFlow meeting={meeting} onReset={onReset} />
+  ) : (
+    <PaidBookingFlow meeting={meeting} onReset={onReset} />
+  )
+}
+
+// --- Free path ---
+
+function FreeBookingFlow({ meeting, onReset }: BookingFlowProps) {
+  const stepLabels = ['Meeting', 'Time', 'Details', 'Confirmed'] as const
   const [step, setStep] = useState(0)
   const [selectedDate, setSelectedDate] = useState<CalendarDay | null>(null)
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null)
   const [intake, setIntake] = useState<Intake>(EMPTY_INTAKE)
-  const [paymentData, setPaymentData] = useState<PaymentData>(EMPTY_PAYMENT)
   const [processing, setProcessing] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [confirmedBooking, setConfirmedBooking] =
     useState<BookingRecord | null>(null)
 
-  // Reset state when meeting changes
   useEffect(() => {
     setStep(0)
     setSelectedDate(null)
@@ -50,30 +92,20 @@ export function BookingFlow({ meeting, onReset }: BookingFlowProps) {
     setConfirmedBooking(null)
   }, [meeting.id])
 
-  const confirmedStepIndex = stepLabels.length - 1
-  const onConfirmedStep = step === confirmedStepIndex
+  const onConfirmedStep = step === stepLabels.length - 1
 
   const canAdvance = () => {
     if (step === 0) return true
     if (step === 1) return Boolean(selectedDate && selectedSlot)
     if (step === 2)
-      return Boolean(intake.name.trim() && intake.email.trim() && intake.brief.trim())
-    if (step === 3 && !isFree)
-      return (
-        paymentData.card.replace(/\s/g, '').length >= 12 &&
-        paymentData.exp.length >= 4 &&
-        paymentData.cvc.length >= 3
+      return Boolean(
+        intake.name.trim() && intake.email.trim() && intake.brief.trim(),
       )
     return true
   }
 
-  // Free path: persist booking server-side. Paid path keeps the existing
-  // 1400ms placeholder until Phase 4 wires Stripe.
-  const finalizeFree = async () => {
-    if (!selectedDate || !selectedSlot) {
-      setSubmitError('Pick a date and time first.')
-      return
-    }
+  const finalize = useCallback(async () => {
+    if (!selectedDate || !selectedSlot) return
     setProcessing(true)
     setSubmitError(null)
     try {
@@ -98,40 +130,246 @@ export function BookingFlow({ meeting, onReset }: BookingFlowProps) {
     } finally {
       setProcessing(false)
     }
-  }
+  }, [intake, meeting.id, selectedDate, selectedSlot])
 
   const advance = () => {
     if (!canAdvance() || processing) return
-    if (isFree && step === 2) {
-      void finalizeFree()
-      return
-    }
-    if (!isFree && step === 3) {
-      // Paid finalize placeholder until Phase 4 wires Stripe Payment Element.
-      setProcessing(true)
-      window.setTimeout(() => {
-        setProcessing(false)
-        setStep((s) => s + 1)
-      }, 1400)
+    if (step === 2) {
+      void finalize()
       return
     }
     setStep((s) => s + 1)
   }
 
-  const back = () => {
-    if (step > 0) setStep(step - 1)
+  return (
+    <BookingShell meeting={meeting} step={step} stepLabels={stepLabels} onReset={onReset}>
+      {step === 0 && <StepMeeting meeting={meeting} onChoose={advance} />}
+      {step === 1 && (
+        <StepTime
+          meetingId={meeting.id}
+          selectedDate={selectedDate}
+          setSelectedDate={setSelectedDate}
+          selectedSlot={selectedSlot}
+          setSelectedSlot={setSelectedSlot}
+        />
+      )}
+      {step === 2 && (
+        <StepIntake intake={intake} setIntake={setIntake} meeting={meeting} />
+      )}
+      {onConfirmedStep && (
+        <StepConfirmed
+          meeting={meeting}
+          selectedDate={selectedDate}
+          selectedSlot={selectedSlot}
+          intake={intake}
+          booking={confirmedBooking}
+          onReset={onReset}
+        />
+      )}
+
+      {submitError && step > 0 && !onConfirmedStep && (
+        <p
+          role="alert"
+          className="mt-4 rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-300"
+        >
+          {submitError}
+        </p>
+      )}
+
+      {step > 0 && !onConfirmedStep && (
+        <FlowFooter
+          processing={processing}
+          canAdvance={canAdvance()}
+          primaryLabel={
+            processing ? 'Processing…' : step === 2 ? 'Confirm booking →' : 'Continue →'
+          }
+          onBack={() => setStep((s) => s - 1)}
+          onAdvance={advance}
+        />
+      )}
+    </BookingShell>
+  )
+}
+
+// --- Paid path ---
+
+function PaidBookingFlow({ meeting, onReset }: BookingFlowProps) {
+  const stepLabels = ['Meeting', 'Time', 'Details', 'Payment', 'Confirmed'] as const
+  const [step, setStep] = useState(0)
+  const [selectedDate, setSelectedDate] = useState<CalendarDay | null>(null)
+  const [selectedSlot, setSelectedSlot] = useState<string | null>(null)
+  const [intake, setIntake] = useState<Intake>(EMPTY_INTAKE)
+  const [clientSecret, setClientSecret] = useState<string | null>(null)
+  const [paidBooking, setPaidBooking] = useState<BookingRecord | null>(null)
+  const [paymentValid, setPaymentValid] = useState(false)
+  const [processing, setProcessing] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
+
+  useEffect(() => {
+    setStep(0)
+    setSelectedDate(null)
+    setSelectedSlot(null)
+    setClientSecret(null)
+    setPaidBooking(null)
+    setPaymentValid(false)
+    setProcessing(false)
+    setSubmitError(null)
+  }, [meeting.id])
+
+  const onConfirmedStep = step === stepLabels.length - 1
+
+  const canAdvance = () => {
+    if (step === 0) return true
+    if (step === 1) return Boolean(selectedDate && selectedSlot)
+    if (step === 2)
+      return Boolean(
+        intake.name.trim() && intake.email.trim() && intake.brief.trim(),
+      )
+    if (step === 3) return paymentValid && Boolean(clientSecret)
+    return true
   }
 
-  const primaryLabel = (() => {
-    if (processing) return 'Processing…'
-    if (step === 2 && isFree) return 'Confirm booking →'
-    if (step === 3 && !isFree) return `Pay ${meeting.priceLabel} →`
-    return 'Continue →'
-  })()
+  // Mint the PaymentIntent + pending booking the first time we land on step 3.
+  // The clientSecret persists across back/forward so the same intent is used.
+  const ensurePaymentIntent = useCallback(async () => {
+    if (clientSecret || !selectedDate || !selectedSlot) return
+    setProcessing(true)
+    setSubmitError(null)
+    try {
+      const result = await createPaymentIntent({
+        data: {
+          meetingId: meeting.id,
+          dateIso: selectedDate.iso,
+          slotLabel: selectedSlot,
+          intake,
+        },
+      })
+      if (result.success) {
+        setClientSecret(result.clientSecret)
+        setPaidBooking(result.booking)
+      } else {
+        setSubmitError(result.error)
+      }
+    } catch (err) {
+      setSubmitError(
+        err instanceof Error ? err.message : 'Could not start checkout.',
+      )
+    } finally {
+      setProcessing(false)
+    }
+  }, [clientSecret, intake, meeting.id, selectedDate, selectedSlot])
+
+  useEffect(() => {
+    if (step === 3) void ensurePaymentIntent()
+  }, [step, ensurePaymentIntent])
+
+  const advance = () => {
+    if (!canAdvance() || processing) return
+    if (step < 3) {
+      setStep((s) => s + 1)
+      return
+    }
+    // Step 3: Pay button. The actual confirm happens inside the inner
+    // component because it has access to <Elements> hooks.
+  }
+
+  const handlePaidSuccess = useCallback(() => {
+    setStep((s) => s + 1)
+  }, [])
+
+  const elementsOptions: StripeElementsOptions | null = clientSecret
+    ? { clientSecret, appearance: STRIPE_APPEARANCE }
+    : null
 
   return (
+    <BookingShell meeting={meeting} step={step} stepLabels={stepLabels} onReset={onReset}>
+      {step === 0 && <StepMeeting meeting={meeting} onChoose={advance} />}
+      {step === 1 && (
+        <StepTime
+          meetingId={meeting.id}
+          selectedDate={selectedDate}
+          setSelectedDate={setSelectedDate}
+          selectedSlot={selectedSlot}
+          setSelectedSlot={setSelectedSlot}
+        />
+      )}
+      {step === 2 && (
+        <StepIntake intake={intake} setIntake={setIntake} meeting={meeting} />
+      )}
+      {step === 3 && elementsOptions && (
+        <Elements stripe={getStripeBrowser()} options={elementsOptions}>
+          <StepPayment
+            meeting={meeting}
+            onValidityChange={setPaymentValid}
+          />
+          <PaidFooter
+            processing={processing}
+            paymentValid={paymentValid}
+            primaryLabel={meeting.priceLabel}
+            onBack={() => setStep((s) => s - 1)}
+            onSetProcessing={setProcessing}
+            onSetSubmitError={setSubmitError}
+            onSucceed={handlePaidSuccess}
+          />
+        </Elements>
+      )}
+      {step === 3 && !elementsOptions && (
+        <div className="rise-in py-12 text-center text-sm text-[var(--brand-ink-soft)]">
+          {submitError ? null : 'Setting up checkout…'}
+        </div>
+      )}
+      {onConfirmedStep && (
+        <StepConfirmed
+          meeting={meeting}
+          selectedDate={selectedDate}
+          selectedSlot={selectedSlot}
+          intake={intake}
+          booking={paidBooking}
+          onReset={onReset}
+        />
+      )}
+
+      {submitError && step > 0 && !onConfirmedStep && (
+        <p
+          role="alert"
+          className="mt-4 rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-300"
+        >
+          {submitError}
+        </p>
+      )}
+
+      {/* Steps 1-2 share the standard footer; step 3 owns its own
+          (PaidFooter, inside <Elements>). */}
+      {step > 0 && step < 3 && (
+        <FlowFooter
+          processing={processing}
+          canAdvance={canAdvance()}
+          primaryLabel="Continue →"
+          onBack={() => setStep((s) => s - 1)}
+          onAdvance={advance}
+        />
+      )}
+    </BookingShell>
+  )
+}
+
+// --- Shared shell + footer chrome ---
+
+function BookingShell({
+  meeting,
+  step,
+  stepLabels,
+  onReset,
+  children,
+}: {
+  meeting: Meeting
+  step: number
+  stepLabels: ReadonlyArray<string>
+  onReset: () => void
+  children: React.ReactNode
+}) {
+  return (
     <div className="glass-card relative mx-auto max-w-[880px] p-6 sm:p-10">
-      {/* Close */}
       <button
         type="button"
         onClick={onReset}
@@ -154,9 +392,8 @@ export function BookingFlow({ meeting, onReset }: BookingFlowProps) {
           <span
             className="font-bold"
             style={{
-              color: meeting.price === 0
-                ? 'var(--brand-emerald)'
-                : 'var(--brand-ink)',
+              color:
+                meeting.price === 0 ? 'var(--brand-emerald)' : 'var(--brand-ink)',
             }}
           >
             {meeting.priceLabel}
@@ -166,74 +403,7 @@ export function BookingFlow({ meeting, onReset }: BookingFlowProps) {
       </div>
 
       <Stepper step={step} steps={stepLabels} />
-
-      {step === 0 && <StepMeeting meeting={meeting} onChoose={advance} />}
-      {step === 1 && (
-        <StepTime
-          meetingId={meeting.id}
-          selectedDate={selectedDate}
-          setSelectedDate={setSelectedDate}
-          selectedSlot={selectedSlot}
-          setSelectedSlot={setSelectedSlot}
-        />
-      )}
-      {step === 2 && (
-        <StepIntake intake={intake} setIntake={setIntake} meeting={meeting} />
-      )}
-      {step === 3 && !isFree && (
-        <StepPayment
-          meeting={meeting}
-          paymentData={paymentData}
-          setPaymentData={setPaymentData}
-        />
-      )}
-      {onConfirmedStep && (
-        <StepConfirmed
-          meeting={meeting}
-          selectedDate={selectedDate}
-          selectedSlot={selectedSlot}
-          intake={intake}
-          booking={confirmedBooking}
-          onReset={onReset}
-        />
-      )}
-
-      {submitError && step > 0 && !onConfirmedStep && (
-        <p
-          role="alert"
-          className="mt-4 rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-300"
-        >
-          {submitError}
-        </p>
-      )}
-
-      {/* Footer actions (hide on step 0 because StepMeeting owns its own primary, hide on confirmed) */}
-      {step > 0 && !onConfirmedStep && (
-        <div className="mt-8 flex items-center justify-between border-t border-[var(--brand-line)] pt-6">
-          <button
-            type="button"
-            onClick={back}
-            disabled={processing}
-            className="inline-flex rounded-full border border-[var(--brand-line-strong,rgba(52,211,153,0.3))] bg-[var(--brand-surface)] px-5 py-2.5 text-[13px] font-semibold text-[var(--brand-ink)] transition hover:-translate-y-0.5 hover:border-[var(--brand-emerald)] disabled:opacity-40"
-          >
-            ← Back
-          </button>
-          <button
-            type="button"
-            onClick={advance}
-            disabled={!canAdvance() || processing}
-            className="inline-flex items-center gap-2 rounded-full bg-[var(--brand-emerald)] px-7 py-3 text-[13px] font-bold text-[#050a08] transition hover:-translate-y-0.5 hover:bg-[var(--brand-emerald-deep)] disabled:pointer-events-none disabled:opacity-40"
-          >
-            {processing && (
-              <span
-                aria-hidden="true"
-                className="booking-spinner inline-block h-3 w-3 rounded-full"
-              />
-            )}
-            {primaryLabel}
-          </button>
-        </div>
-      )}
+      {children}
 
       <style>{`
         .booking-spinner {
@@ -243,6 +413,123 @@ export function BookingFlow({ meeting, onReset }: BookingFlowProps) {
         }
         @keyframes booking-spin { to { transform: rotate(360deg); } }
       `}</style>
+    </div>
+  )
+}
+
+function FlowFooter({
+  processing,
+  canAdvance,
+  primaryLabel,
+  onBack,
+  onAdvance,
+}: {
+  processing: boolean
+  canAdvance: boolean
+  primaryLabel: string
+  onBack: () => void
+  onAdvance: () => void
+}) {
+  return (
+    <div className="mt-8 flex items-center justify-between border-t border-[var(--brand-line)] pt-6">
+      <button
+        type="button"
+        onClick={onBack}
+        disabled={processing}
+        className="inline-flex rounded-full border border-[var(--brand-line-strong,rgba(52,211,153,0.3))] bg-[var(--brand-surface)] px-5 py-2.5 text-[13px] font-semibold text-[var(--brand-ink)] transition hover:-translate-y-0.5 hover:border-[var(--brand-emerald)] disabled:opacity-40"
+      >
+        ← Back
+      </button>
+      <button
+        type="button"
+        onClick={onAdvance}
+        disabled={!canAdvance || processing}
+        className="inline-flex items-center gap-2 rounded-full bg-[var(--brand-emerald)] px-7 py-3 text-[13px] font-bold text-[#050a08] transition hover:-translate-y-0.5 hover:bg-[var(--brand-emerald-deep)] disabled:pointer-events-none disabled:opacity-40"
+      >
+        {processing && (
+          <span
+            aria-hidden="true"
+            className="booking-spinner inline-block h-3 w-3 rounded-full"
+          />
+        )}
+        {primaryLabel}
+      </button>
+    </div>
+  )
+}
+
+// PaidFooter lives inside <Elements> so it can access the stripe + elements
+// hooks. It owns the confirmPayment call and surfaces the result up.
+function PaidFooter({
+  processing,
+  paymentValid,
+  primaryLabel,
+  onBack,
+  onSetProcessing,
+  onSetSubmitError,
+  onSucceed,
+}: {
+  processing: boolean
+  paymentValid: boolean
+  primaryLabel: string
+  onBack: () => void
+  onSetProcessing: (b: boolean) => void
+  onSetSubmitError: (s: string | null) => void
+  onSucceed: () => void
+}) {
+  const stripe = useStripe()
+  const elements = useElements()
+
+  const confirm = async () => {
+    if (!stripe || !elements || !paymentValid) return
+    onSetProcessing(true)
+    onSetSubmitError(null)
+    const { error, paymentIntent } = await stripe.confirmPayment({
+      elements,
+      // redirect: 'if_required' keeps the flow inline for cards / wallets
+      // that do not need a 3DS step. With allow_redirects: 'never' set
+      // server-side, this should never actually redirect.
+      redirect: 'if_required',
+    })
+    if (error) {
+      onSetSubmitError(error.message ?? 'Payment failed.')
+      onSetProcessing(false)
+      return
+    }
+    if (paymentIntent.status === 'succeeded') {
+      onSetProcessing(false)
+      onSucceed()
+      return
+    }
+    // Anything else: leave the user on the payment step with a generic msg.
+    onSetSubmitError('Payment did not complete. Try again.')
+    onSetProcessing(false)
+  }
+
+  return (
+    <div className="mt-8 flex items-center justify-between border-t border-[var(--brand-line)] pt-6">
+      <button
+        type="button"
+        onClick={onBack}
+        disabled={processing}
+        className="inline-flex rounded-full border border-[var(--brand-line-strong,rgba(52,211,153,0.3))] bg-[var(--brand-surface)] px-5 py-2.5 text-[13px] font-semibold text-[var(--brand-ink)] transition hover:-translate-y-0.5 hover:border-[var(--brand-emerald)] disabled:opacity-40"
+      >
+        ← Back
+      </button>
+      <button
+        type="button"
+        onClick={() => void confirm()}
+        disabled={!paymentValid || processing || !stripe}
+        className="inline-flex items-center gap-2 rounded-full bg-[var(--brand-emerald)] px-7 py-3 text-[13px] font-bold text-[#050a08] transition hover:-translate-y-0.5 hover:bg-[var(--brand-emerald-deep)] disabled:pointer-events-none disabled:opacity-40"
+      >
+        {processing && (
+          <span
+            aria-hidden="true"
+            className="booking-spinner inline-block h-3 w-3 rounded-full"
+          />
+        )}
+        {processing ? 'Processing…' : `Pay ${primaryLabel} →`}
+      </button>
     </div>
   )
 }

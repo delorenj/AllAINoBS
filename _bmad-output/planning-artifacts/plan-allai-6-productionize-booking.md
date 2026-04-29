@@ -382,6 +382,23 @@ Smallest possible production slice: the `intro` meeting no longer needs Stripe, 
        client polls or websockets to learn confirmation
 ```
 
+### Future: Mercury Reconciliation (post-launch)
+
+Mercury Bank API token provisioned alongside Stripe. Not part of the user-facing booking flow. Scope for a follow-up cycle:
+
+- Cron-style server function that pulls Mercury transactions for the AutomaticAI account on a daily cadence.
+- Match Stripe payouts (visible via `stripe.payouts.list`) against Mercury deposits by amount + arrival window.
+- Surface variance (missing deposits, mismatched amounts) in the `/book/admin` view.
+- No effect on the booking flow itself; this is bookkeeping infrastructure.
+
+Lives in `_bmad-output/planning-artifacts/plan-allai-6-mercury-reconciliation.md` once scoped. Token already in `.env.local` so the work can land without further ops.
+
+### Phase 4 Adjustment (2026-04-29)
+
+The Stripe products/prices bootstrap script (originally Task 7 in the plan) is **deferred**. PaymentIntent.create() accepts an arbitrary `amount` per call; the Product/Price abstraction is only useful for Checkout Sessions or Subscriptions. Reconsidered for v2 if we want unified Stripe-side reporting per meeting type.
+
+The PaymentIntent is configured with `automatic_payment_methods.allow_redirects: 'never'`, restricting the Payment Element to inline-only methods (cards + Apple Pay/Google Pay). Avoids the return-from-3DS state-recovery code path. Relax later if iDEAL/SEPA/etc are needed.
+
 ### Side-effect Failure Policy
 
 | Side-effect | Failure mode | Recovery |

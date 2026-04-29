@@ -23,6 +23,7 @@ import { Route as DemoApolloClientRouteImport } from './routes/demo.apollo-clien
 import { Route as DemoStrapiArticleIdRouteImport } from './routes/demo/strapi.$articleId'
 import { Route as DemoFormSimpleRouteImport } from './routes/demo/form.simple'
 import { Route as DemoFormAddressRouteImport } from './routes/demo/form.address'
+import { Route as ApiWebhooksStripeRouteImport } from './routes/api/webhooks/stripe'
 
 const BookRoute = BookRouteImport.update({
   id: '/book',
@@ -94,6 +95,11 @@ const DemoFormAddressRoute = DemoFormAddressRouteImport.update({
   path: '/demo/form/address',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiWebhooksStripeRoute = ApiWebhooksStripeRouteImport.update({
+  id: '/api/webhooks/stripe',
+  path: '/api/webhooks/stripe',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -107,6 +113,7 @@ export interface FileRoutesByFullPath {
   '/demo/strapi': typeof DemoStrapiRouteWithChildren
   '/demo/table': typeof DemoTableRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
+  '/api/webhooks/stripe': typeof ApiWebhooksStripeRoute
   '/demo/form/address': typeof DemoFormAddressRoute
   '/demo/form/simple': typeof DemoFormSimpleRoute
   '/demo/strapi/$articleId': typeof DemoStrapiArticleIdRoute
@@ -123,6 +130,7 @@ export interface FileRoutesByTo {
   '/demo/strapi': typeof DemoStrapiRouteWithChildren
   '/demo/table': typeof DemoTableRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
+  '/api/webhooks/stripe': typeof ApiWebhooksStripeRoute
   '/demo/form/address': typeof DemoFormAddressRoute
   '/demo/form/simple': typeof DemoFormSimpleRoute
   '/demo/strapi/$articleId': typeof DemoStrapiArticleIdRoute
@@ -140,6 +148,7 @@ export interface FileRoutesById {
   '/demo/strapi': typeof DemoStrapiRouteWithChildren
   '/demo/table': typeof DemoTableRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
+  '/api/webhooks/stripe': typeof ApiWebhooksStripeRoute
   '/demo/form/address': typeof DemoFormAddressRoute
   '/demo/form/simple': typeof DemoFormSimpleRoute
   '/demo/strapi/$articleId': typeof DemoStrapiArticleIdRoute
@@ -158,6 +167,7 @@ export interface FileRouteTypes {
     | '/demo/strapi'
     | '/demo/table'
     | '/demo/tanstack-query'
+    | '/api/webhooks/stripe'
     | '/demo/form/address'
     | '/demo/form/simple'
     | '/demo/strapi/$articleId'
@@ -174,6 +184,7 @@ export interface FileRouteTypes {
     | '/demo/strapi'
     | '/demo/table'
     | '/demo/tanstack-query'
+    | '/api/webhooks/stripe'
     | '/demo/form/address'
     | '/demo/form/simple'
     | '/demo/strapi/$articleId'
@@ -190,6 +201,7 @@ export interface FileRouteTypes {
     | '/demo/strapi'
     | '/demo/table'
     | '/demo/tanstack-query'
+    | '/api/webhooks/stripe'
     | '/demo/form/address'
     | '/demo/form/simple'
     | '/demo/strapi/$articleId'
@@ -207,6 +219,7 @@ export interface RootRouteChildren {
   DemoStrapiRoute: typeof DemoStrapiRouteWithChildren
   DemoTableRoute: typeof DemoTableRoute
   DemoTanstackQueryRoute: typeof DemoTanstackQueryRoute
+  ApiWebhooksStripeRoute: typeof ApiWebhooksStripeRoute
   DemoFormAddressRoute: typeof DemoFormAddressRoute
   DemoFormSimpleRoute: typeof DemoFormSimpleRoute
 }
@@ -311,6 +324,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DemoFormAddressRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/webhooks/stripe': {
+      id: '/api/webhooks/stripe'
+      path: '/api/webhooks/stripe'
+      fullPath: '/api/webhooks/stripe'
+      preLoaderRoute: typeof ApiWebhooksStripeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -338,6 +358,7 @@ const rootRouteChildren: RootRouteChildren = {
   DemoStrapiRoute: DemoStrapiRouteWithChildren,
   DemoTableRoute: DemoTableRoute,
   DemoTanstackQueryRoute: DemoTanstackQueryRoute,
+  ApiWebhooksStripeRoute: ApiWebhooksStripeRoute,
   DemoFormAddressRoute: DemoFormAddressRoute,
   DemoFormSimpleRoute: DemoFormSimpleRoute,
 }
