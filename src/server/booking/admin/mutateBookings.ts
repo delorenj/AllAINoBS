@@ -7,6 +7,8 @@ import { getMeeting } from '#/data/meetings'
 import { findBookingById, patchBooking } from '../repo'
 import { composeIcsForBooking } from '../composeIcsForBooking'
 import { sendBookingEmailViaN8n } from '../sendEmailViaN8n'
+import { createGoogleEvent } from '../createGoogleEvent'
+import { GoogleEnvMissingError } from '../google-client'
 import {
   AdminUnauthorizedError,
   requireAdmin,
@@ -204,5 +206,81 @@ export const resendBookingEmail = createServerFn({ method: 'POST' })
       success: true,
       bookingId: data.bookingId,
       webhookOk: true,
+    }
+  })
+
+// --- recreateGoogleEvent ---
+
+const recreateGcalInputSchema = z.object({
+  actorEmail: z.string().email(),
+  bookingId: z.string().uuid(),
+})
+
+export type RecreateGcalInput = z.infer<typeof recreateGcalInputSchema>
+
+export type RecreateGcalResult =
+  | {
+      success: true
+      bookingId: string
+      googleEventId: string
+      googleMeetUrl: string | null
+    }
+  | AdminUnauthorizedResult
+  | { success: false; error: string; status: 404 | 502 }
+
+export const recreateGoogleEvent = createServerFn({ method: 'POST' })
+  .inputValidator((data: RecreateGcalInput) =>
+    recreateGcalInputSchema.parse(data),
+  )
+  .handler(async ({ data }): Promise<RecreateGcalResult> => {
+    try {
+      await requireAdmin(data.actorEmail)
+    } catch (err) {
+      if (err instanceof AdminUnauthorizedError) return unauthorizedResult(err)
+      throw err
+    }
+
+    const booking = await findBookingById(data.bookingId)
+    if (!booking) {
+      return { success: false, error: 'Booking not found', status: 404 }
+    }
+    const meeting = getMeeting(booking.meetingId)
+    const intake = booking.intakeJson as { name?: string; email: string }
+
+    try {
+      const gcal = await createGoogleEvent({
+        meetingTitle: meeting?.title ?? booking.meetingId,
+        meetingPitch: meeting?.pitch,
+        meetingPrep: meeting?.prep,
+        slotIso: booking.slotIso,
+        durationMinutes: booking.durationMinutes,
+        organizerEmail: FROM_ADDRESS,
+        attendeeEmail: intake.email,
+        attendeeName: intake.name ?? intake.email,
+        confirmationId: booking.confirmationId,
+      })
+      await patchBooking(booking.id, {
+        googleEventId: gcal.eventId,
+        googleMeetUrl: gcal.meetUrl,
+      })
+      return {
+        success: true,
+        bookingId: data.bookingId,
+        googleEventId: gcal.eventId,
+        googleMeetUrl: gcal.meetUrl,
+      }
+    } catch (err) {
+      if (err instanceof GoogleEnvMissingError) {
+        return { success: false, error: err.message, status: 502 }
+      }
+      console.error('[admin] recreateGoogleEvent failed', {
+        bookingId: data.bookingId,
+        err: err instanceof Error ? err.message : String(err),
+      })
+      return {
+        success: false,
+        error: err instanceof Error ? err.message : 'gcal failed',
+        status: 502,
+      }
     }
   })

@@ -3,6 +3,7 @@ import { listBookings } from '#/server/booking/admin/listBookings'
 import {
   cancelBooking,
   markNoShow,
+  recreateGoogleEvent,
   resendBookingEmail,
 } from '#/server/booking/admin/mutateBookings'
 
@@ -65,6 +66,17 @@ export function BookingsTable({ actorEmail }: BookingsTableProps) {
       if (!res.success) throw new Error(res.error)
       return res
     },
+  })
+
+  const recreateGcalMutation = useMutation({
+    mutationFn: async (bookingId: string) => {
+      const res = await recreateGoogleEvent({
+        data: { actorEmail, bookingId },
+      })
+      if (!res.success) throw new Error(res.error)
+      return res
+    },
+    onSuccess: invalidate,
   })
 
   if (bookingsQuery.isLoading) {
@@ -208,10 +220,30 @@ export function BookingsTable({ actorEmail }: BookingsTableProps) {
                     >
                       Resend email
                     </RowButton>
+                    <RowButton
+                      onClick={() => recreateGcalMutation.mutate(b.id)}
+                      disabled={recreateGcalMutation.isPending}
+                    >
+                      {b.googleEventId ? 'Re-make gcal' : 'Make gcal'}
+                    </RowButton>
                   </div>
-                  {resendMutation.error instanceof Error && (
+                  {b.googleMeetUrl && (
+                    <a
+                      href={b.googleMeetUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-1 inline-block truncate text-[11px] text-[var(--brand-emerald)] underline-offset-2 hover:underline"
+                      style={{ maxWidth: 220 }}
+                    >
+                      {b.googleMeetUrl.replace('https://', '')}
+                    </a>
+                  )}
+                  {(resendMutation.error instanceof Error ||
+                    recreateGcalMutation.error instanceof Error) && (
                     <p className="mt-1 text-xs text-red-300">
-                      {resendMutation.error.message}
+                      {(resendMutation.error as Error | undefined)?.message ??
+                        (recreateGcalMutation.error as Error | undefined)
+                          ?.message}
                     </p>
                   )}
                 </td>

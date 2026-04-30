@@ -9,6 +9,8 @@ import {
 } from './repo'
 import { sendBookingEmailViaN8n } from './sendEmailViaN8n'
 import { composeIcsForBooking } from './composeIcsForBooking'
+import { createGoogleEvent } from './createGoogleEvent'
+import { GoogleEnvMissingError } from './google-client'
 import { getMeeting } from '#/data/meetings'
 
 const FROM_ADDRESS = 'jarad@automaticai.io'
@@ -123,8 +125,9 @@ async function onPaymentIntentSucceeded(
     }
   }
 
-  // Side-effect: confirmation email via n8n. Fire-and-forget; webhook stays
-  // green even if email dispatch errors.
+  // Side-effects after promote-to-paid. Fire-and-forget so the webhook
+  // returns 200 to Stripe quickly; admin can rerun individual side-effects
+  // (gcal create, email send) from /book/admin if any of these fail.
   const meeting = getMeeting(booking.meetingId)
   const intake = booking.intakeJson as {
     name: string
@@ -133,6 +136,63 @@ async function onPaymentIntentSucceeded(
     brief: string
     repo?: string
   }
+
+  void provisionGcalAndDispatchEmail(booking.id, meeting, intake)
+
+  return { ok: true, bookingId: booking.id, message: 'promoted to paid' }
+}
+
+async function provisionGcalAndDispatchEmail(
+  bookingId: string,
+  meeting: ReturnType<typeof getMeeting>,
+  intake: {
+    name: string
+    email: string
+    company?: string
+    brief: string
+    repo?: string
+  },
+): Promise<void> {
+  let booking = await findBookingById(bookingId)
+  if (!booking) {
+    console.error('[stripe.webhook.fanout] booking vanished mid-fanout', {
+      bookingId,
+    })
+    return
+  }
+
+  // Create the Google Calendar event with a Meet link. Best-effort: a failure
+  // here lets the email still go out with placeholder copy.
+  try {
+    const gcal = await createGoogleEvent({
+      meetingTitle: meeting?.title ?? booking.meetingId,
+      meetingPitch: meeting?.pitch,
+      meetingPrep: meeting?.prep,
+      slotIso: booking.slotIso,
+      durationMinutes: booking.durationMinutes,
+      organizerEmail: FROM_ADDRESS,
+      attendeeEmail: intake.email,
+      attendeeName: intake.name,
+      confirmationId: booking.confirmationId,
+    })
+    const patched = await patchBooking(booking.id, {
+      googleEventId: gcal.eventId,
+      googleMeetUrl: gcal.meetUrl,
+    })
+    if (patched) booking = patched
+  } catch (err) {
+    if (err instanceof GoogleEnvMissingError) {
+      console.warn('[stripe.webhook.fanout] gcal env missing; skipping', {
+        bookingId,
+      })
+    } else {
+      console.error('[stripe.webhook.fanout] gcal create failed', {
+        bookingId,
+        err: err instanceof Error ? err.message : String(err),
+      })
+    }
+  }
+
   const fullDateLabel = booking.slotIso.toLocaleDateString('en-US', {
     weekday: 'long',
     month: 'long',
@@ -146,7 +206,7 @@ async function onPaymentIntentSucceeded(
       ? Buffer.from(icsBody, 'utf8').toString('base64')
       : btoa(unescape(encodeURIComponent(icsBody)))
 
-  void sendBookingEmailViaN8n(
+  await sendBookingEmailViaN8n(
     {
       confirmationId: booking.confirmationId,
       to: intake.email,
@@ -165,8 +225,6 @@ async function onPaymentIntentSucceeded(
     },
     process.env.N8N_BOOKING_WEBHOOK_URL,
   )
-
-  return { ok: true, bookingId: booking.id, message: 'promoted to paid' }
 }
 
 async function onPaymentIntentFailed(

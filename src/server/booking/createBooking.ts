@@ -2,10 +2,12 @@ import { createServerFn } from '@tanstack/react-start'
 import { getMeeting } from '#/data/meetings'
 import { bookingCreateInputSchema } from './schema'
 import type { BookingCreateInput, BookingCreateResult } from './schema'
-import { insertBooking, toBookingRecord } from './repo'
+import { insertBooking, patchBooking, toBookingRecord } from './repo'
 import { slotToUtc } from './slot'
 import { sendBookingEmailViaN8n } from './sendEmailViaN8n'
 import { composeIcsForBooking } from './composeIcsForBooking'
+import { createGoogleEvent } from './createGoogleEvent'
+import { GoogleEnvMissingError } from './google-client'
 
 const FROM_ADDRESS = 'jarad@automaticai.io'
 const BRAND_TAGLINE = 'All AI · No BS'
@@ -73,7 +75,43 @@ export const createBooking = createServerFn({ method: 'POST' })
       return fail('Could not save the booking. Please try again.', 500)
     }
 
-    const record = toBookingRecord(booking)
+    // Side-effect: create the Google Calendar event with a Meet link. Awaited
+    // so the confirmation email goes out with the real Meet URL on first send.
+    // Failures (env missing, transient gcal blip) downgrade gracefully: the
+    // booking row still confirms, the email goes out with placeholder copy,
+    // and admin can rerun via /book/admin.
+    let bookingForEmail = booking
+    try {
+      const gcal = await createGoogleEvent({
+        meetingTitle: meeting.title,
+        meetingPitch: meeting.pitch,
+        meetingPrep: meeting.prep,
+        slotIso,
+        durationMinutes: meeting.duration,
+        organizerEmail: FROM_ADDRESS,
+        attendeeEmail: data.intake.email,
+        attendeeName: data.intake.name,
+        confirmationId: booking.confirmationId,
+      })
+      const patched = await patchBooking(booking.id, {
+        googleEventId: gcal.eventId,
+        googleMeetUrl: gcal.meetUrl,
+      })
+      if (patched) bookingForEmail = patched
+    } catch (err) {
+      if (err instanceof GoogleEnvMissingError) {
+        console.warn('[booking.create] gcal env not configured; skipping', {
+          confirmationId: booking.confirmationId,
+        })
+      } else {
+        console.error('[booking.create] gcal create failed; continuing without Meet link', {
+          confirmationId: booking.confirmationId,
+          err: err instanceof Error ? err.message : String(err),
+        })
+      }
+    }
+
+    const record = toBookingRecord(bookingForEmail)
 
     // Side-effect: email confirmation via n8n. Fire-and-forget so a transient
     // n8n hiccup does not roll back a successful booking.
@@ -82,7 +120,7 @@ export const createBooking = createServerFn({ method: 'POST' })
       { weekday: 'long', month: 'long', day: 'numeric' },
     )
 
-    const icsBody = composeIcsForBooking(booking)
+    const icsBody = composeIcsForBooking(bookingForEmail)
     const icsBase64 =
       typeof Buffer !== 'undefined'
         ? Buffer.from(icsBody, 'utf8').toString('base64')
