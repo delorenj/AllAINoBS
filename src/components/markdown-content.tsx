@@ -37,51 +37,51 @@ export function MarkdownContent({
       <Markdown
         remarkPlugins={[remarkGfm]}
         components={{
-          h1: ({ children }) => <h1 className={styles.h1}>{children}</h1>,
-          h2: ({ children }) => <h2 className={styles.h2}>{children}</h2>,
-          h3: ({ children }) => <h3 className={styles.h3}>{children}</h3>,
-          p: ({ children }) => <p className={styles.p}>{children}</p>,
-          a: ({ href, children }) => (
+          h1: ({ children: headingChildren }) => <h1 className={styles.h1}>{headingChildren}</h1>,
+          h2: ({ children: headingChildren }) => <h2 className={styles.h2}>{headingChildren}</h2>,
+          h3: ({ children: headingChildren }) => <h3 className={styles.h3}>{headingChildren}</h3>,
+          p: ({ children: paragraphChildren }) => <p className={styles.p}>{paragraphChildren}</p>,
+          a: ({ href, children: anchorChildren }) => (
             <a
               href={href}
               className={styles.a}
               target="_blank"
               rel="noopener noreferrer"
             >
-              {children}
+              {anchorChildren}
             </a>
           ),
-          ul: ({ children }) => <ul className={styles.ul}>{children}</ul>,
-          ol: ({ children }) => <ol className={styles.ol}>{children}</ol>,
-          li: ({ children }) => <li className={styles.li}>{children}</li>,
-          blockquote: ({ children }) => (
-            <blockquote className={styles.blockquote}>{children}</blockquote>
+          ul: ({ children: unorderedChildren }) => <ul className={styles.ul}>{unorderedChildren}</ul>,
+          ol: ({ children: orderedChildren }) => <ol className={styles.ol}>{orderedChildren}</ol>,
+          li: ({ children: listItemChildren }) => <li className={styles.li}>{listItemChildren}</li>,
+          blockquote: ({ children: blockquoteChildren }) => (
+            <blockquote className={styles.blockquote}>{blockquoteChildren}</blockquote>
           ),
-          code: ({ className, children }) => {
-            const isCodeBlock = className?.includes('language-')
+          code: ({ className: codeClassName, children: codeChildren }) => {
+            const isCodeBlock = codeClassName?.includes('language-')
             if (isCodeBlock) {
               return (
                 <pre className={styles.pre}>
                   <code className="text-sm font-mono text-gray-300">
-                    {children}
+                    {codeChildren}
                   </code>
                 </pre>
               )
             }
-            return <code className={styles.code}>{children}</code>
+            return <code className={styles.code}>{codeChildren}</code>
           },
-          pre: ({ children }) => <>{children}</>,
-          table: ({ children }) => (
-            <table className={styles.table}>{children}</table>
+          pre: ({ children: preChildren }) => <>{preChildren}</>,
+          table: ({ children: tableChildren }) => (
+            <table className={styles.table}>{tableChildren}</table>
           ),
-          th: ({ children }) => <th className={styles.th}>{children}</th>,
-          td: ({ children }) => <td className={styles.td}>{children}</td>,
+          th: ({ children: headerChildren }) => <th className={styles.th}>{headerChildren}</th>,
+          td: ({ children: cellChildren }) => <td className={styles.td}>{cellChildren}</td>,
           img: ({ src, alt }) => (
             <img src={src} alt={alt || ''} className={styles.img} />
           ),
           hr: () => <hr className={styles.hr} />,
-          strong: ({ children }) => (
-            <strong className={styles.strong}>{children}</strong>
+          strong: ({ children: strongChildren }) => (
+            <strong className={styles.strong}>{strongChildren}</strong>
           ),
         }}
       >

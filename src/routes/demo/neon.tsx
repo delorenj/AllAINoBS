@@ -86,7 +86,7 @@ function App() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     const formData = new FormData(e.target as HTMLFormElement)
-    const data = Object.fromEntries(formData)
+    const formValues = Object.fromEntries(formData)
     const result = await insertTodo({ data: { title: data.title as string } })
     if (!result.success) {
       console.error(result.error ?? 'Failed to create todo.')
@@ -125,8 +125,7 @@ function App() {
             Neon Database Demo
           </h1>
         </div>
-        {todos && (
-          <>
+        <>
             <h1 className="text-2xl font-bold mb-4">Todos</h1>
             <ul className="space-y-3 mb-6">
               {todos.map((todo) => (
@@ -156,8 +155,7 @@ function App() {
                 Add Todo
               </button>
             </form>
-          </>
-        )}
+        </>
       </div>
     </div>
   )

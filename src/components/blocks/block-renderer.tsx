@@ -24,7 +24,7 @@ interface BlockRendererProps {
  * ```
  */
 export function BlockRenderer({ blocks }: Readonly<BlockRendererProps>) {
-  if (!blocks || blocks.length === 0) return null
+  if (blocks.length === 0) return null
 
   const renderBlock = (block: Block) => {
     switch (block.__component) {

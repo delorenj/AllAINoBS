@@ -97,7 +97,7 @@ function DemoDrizzle() {
     return <DrizzleConnectionError error={data.error} />
   }
 
-  const { todos } = data
+  const { todos: todoItems } = data
 
   return (
     <div

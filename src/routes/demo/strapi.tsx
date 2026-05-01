@@ -30,16 +30,6 @@ export const Route = createFileRoute('/demo/strapi')({
         data: { query, page },
       })
 
-      // Check if we got data
-      if (!response || !response.data) {
-        return {
-          status: 'empty',
-          articles: [],
-          meta: response?.meta,
-          query,
-        }
-      }
-
       // Check if data array is empty
       if (response.data.length === 0) {
         return {

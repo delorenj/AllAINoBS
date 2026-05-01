@@ -46,11 +46,7 @@ function ErrorComponent({ error }: { error: Error }) {
 }
 
 function RouteComponent() {
-  const { success, article, error } = Route.useLoaderData() as {
-    success: boolean
-    article: TArticle | null
-    error?: string
-  }
+  const { success, article, error } = Route.useLoaderData()
 
   // Show error state
   if (!success || !article) {
